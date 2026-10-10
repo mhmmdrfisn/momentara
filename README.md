@@ -37,6 +37,12 @@ Pratinjau kamera dicerminkan seperti cermin sungguhan. Setiap foto dipotong ke r
 
 ---
 
+## Tab Tentang Pembuat
+
+Di kanan atas daftar bingkai ada tautan **Tentang Pembuat** yang membuka profil singkat dan ringkasan enam fitur Momentara. Tab ini memakai `switchView()` yang sama dengan layar kamera, dan tetap responsif di ponsel maupun desktop.
+
+---
+
 ## Bingkai
 
 Sepuluh bingkai, didefinisikan di objek `themes`:

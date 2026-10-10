@@ -78,6 +78,7 @@
             <div class="w-full lg:col-span-8 flex flex-col pb-20 lg:pb-10 pt-4 lg:pt-4">
                 <div class="flex items-center justify-between mb-8">
                     <h3 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Select Frame</h3>
+                    <button onclick="switchView('about')" class="text-xs font-bold text-stone-400 uppercase tracking-widest hover:text-primary transition focus:outline-none">Tentang Pembuat</button>
                 </div>
 
                 <div id="theme-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
@@ -183,6 +184,72 @@
         </div>
     </div>
 
+    <!-- ══════════════ ABOUT ══════════════ -->
+    <div id="view-about" class="view-container flex-col min-h-[100dvh]">
+        <div class="max-w-3xl w-full mx-auto px-5 sm:px-6 py-8 sm:py-12 lg:py-16">
+
+            <button onclick="switchView('home')" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-stone-400 hover:text-primary transition focus:outline-none mb-6 sm:mb-8">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg>
+                Kembali
+            </button>
+
+            <div class="bg-white rounded-2xl border-2 border-stone-200 overflow-hidden shadow-sm">
+
+                <div class="h-28 sm:h-36 bg-primary relative w-full overflow-hidden">
+                    <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 16px 16px;"></div>
+                </div>
+
+                <div class="px-5 sm:px-8 pb-8 relative text-left">
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-full border-4 border-white shadow-sm flex items-center justify-center absolute -top-10 sm:-top-12 left-5 sm:left-8 overflow-hidden">
+                        <svg class="w-9 h-9 sm:w-10 sm:h-10 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+
+                    <div class="pt-12 sm:pt-14">
+                        <h2 class="font-serif text-3xl sm:text-4xl font-semibold text-primary tracking-tight">Rafi</h2>
+                        <p class="text-stone-500 font-medium text-sm mt-1">Mahasiswa</p>
+                    </div>
+
+                    <div class="mt-5 text-stone-600 text-sm sm:text-base leading-relaxed max-w-2xl">
+                        <p>
+                            <strong class="text-primary">Momentara</strong> adalah photobooth berbasis web yang mengubah kamera HP atau laptop menjadi bilik foto instan.
+                            Pengguna memilih bingkai, menekan satu tombol, lalu tiga foto diambil beruntun dan langsung disusun menjadi satu strip PNG.
+                            Seluruh gambar digambar di <code class="text-[13px] bg-stone-100 px-1.5 py-0.5 rounded-md">canvas</code> perangkat sendiri — tanpa server, tanpa unggahan, tanpa akun.
+                        </p>
+                    </div>
+
+                    <div class="mt-6 flex flex-col sm:flex-row flex-wrap gap-3 border-t border-stone-200 pt-6">
+                        <a href="https://www.linkedin.com/in/rafi-sanjaya-43803a30b/" target="_blank" rel="noopener"
+                           class="flex-1 flex justify-center items-center gap-2 border border-stone-200 bg-white px-4 py-2.5 text-[11px] font-bold text-stone-600 uppercase tracking-wider rounded-xl hover:bg-[#0A66C2] hover:border-[#0A66C2] hover:text-white transition-all group">
+                            <svg class="w-4 h-4 text-stone-400 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                            LinkedIn
+                        </a>
+
+                        <a href="https://github.com/mhmmdrfisn/momentara" target="_blank" rel="noopener"
+                           class="flex-1 flex justify-center items-center gap-2 border border-stone-200 bg-white px-4 py-2.5 text-[11px] font-bold text-stone-600 uppercase tracking-wider rounded-xl hover:bg-primary hover:border-primary hover:text-white transition-all group">
+                            <svg class="w-4 h-4 text-stone-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.5-1.4 6.5-7a4.6 4.6 0 0 0-1.39-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.35-3.5 1.36a11.39 11.39 0 0 0-6 0c-2.4-1.71-3.5-1.36-3.5-1.36a4.2 4.2 0 0 0-.1 3.2 4.6 4.6 0 0 0-1.39 3.2c0 5.6 3.35 6.65 6.5 7A4.8 4.8 0 0 0 8 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+                            GitHub
+                        </a>
+
+                        <a href="https://www.instagram.com/mhmmdrfisn" target="_blank" rel="noopener"
+                           class="flex-1 flex justify-center items-center gap-2 border border-stone-200 bg-white px-4 py-2.5 text-[11px] font-bold text-stone-600 uppercase tracking-wider rounded-xl hover:bg-[#E1306C] hover:border-[#E1306C] hover:text-white transition-all group">
+                            <svg class="w-4 h-4 text-stone-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                            Instagram
+                        </a>
+                    </div>
+
+                    <div class="mt-6 border-t border-dashed border-stone-200 pt-6">
+                        <h3 class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                            <span>Fitur Momentara</span>
+                            <svg class="w-4 h-4 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                        </h3>
+
+                        <div id="portfolio-list" class="flex flex-col gap-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="view-camera" class="view-container fixed inset-0 z-40 bg-black flex-col items-center justify-center p-4 md:p-12">
         <div class="absolute top-0 inset-x-0 p-6 flex justify-between items-center z-30">
             <button onclick="stopCamera(); switchView('home')" class="text-white/80 hover:text-white text-sm font-medium tracking-wide transition focus:outline-none">Cancel</button>
@@ -270,6 +337,68 @@
             document.querySelectorAll('.theme-card').forEach(card => card.classList.remove('selected'));
             document.getElementById(`theme-${themeId}`).classList.add('selected');
         }
+
+        // ── Tab Tentang: daftar fitur Momentara ──
+        const FITUR = [
+            {
+                judul: "Tiga Foto Otomatis",
+                desc: "Satu kali tekan tombol rana, kamera langsung mengambil tiga foto beruntun. Tiap foto didahului hitung mundur 3-2-1 dan ditutup kilau putih singkat seperti rana kamera sungguhan.",
+                tag: "Canvas 2D"
+            },
+            {
+                judul: "Sepuluh Bingkai Unik",
+                desc: "Aura Blanc, Noir Ébène, Oud Wood, dan tujuh lainnya. Tiap bingkai punya latar, warna, dan font sendiri yang digambar langsung lewat Canvas API, bukan gambar aset.",
+                tag: "10 Frame"
+            },
+            {
+                judul: "Strip 600 × 1600",
+                desc: "Tiga foto berukuran 500 × 375 dirangkai jadi satu strip PNG rasio 4:3 yang rapi, lengkap dengan judul bingkai dan tanda air momentara di bagian bawah.",
+                tag: "PNG Export"
+            },
+            {
+                judul: "Privasi Penuh",
+                desc: "Tidak ada server, tidak ada unggahan, tidak ada cookie. Foto berpindah langsung dari kamera ke canvas di perangkat, lalu menjadi file yang tersimpan di komputer sendiri.",
+                tag: "Tanpa Server"
+            },
+            {
+                judul: "Mode Cermin",
+                desc: "Pratinjau kamera dicerminkan seperti cermin sungguhan supaya gampang menyesuaikan posisi, sementara hasil fotonya tetap dipotong rasio 4:3 yang konsisten.",
+                tag: "getUserMedia"
+            },
+            {
+                judul: "Satu File HTML",
+                desc: "Seluruh aplikasi — markup, gaya, dan logika — tertampung dalam satu index.html tanpa build step dan tanpa dependensi npm. Cukup buka lewat server lokal.",
+                tag: "Tanpa Build"
+            }
+        ];
+
+        function renderFitur() {
+            const wadah = document.getElementById('portfolio-list');
+            if (!wadah) return;
+            FITUR.forEach(f => {
+                const kartu = document.createElement('div');
+                kartu.className = 'group rounded-xl border border-stone-200 bg-stone-50 p-4 transition hover:border-stone-300 hover:bg-white';
+
+                const kepala = document.createElement('div');
+                kepala.className = 'flex items-start justify-between gap-3 mb-2';
+                const h = document.createElement('h4');
+                h.className = 'text-sm font-bold text-primary leading-snug';
+                h.textContent = f.judul;
+                const tag = document.createElement('span');
+                tag.className = 'shrink-0 text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full px-2.5 py-1';
+                tag.textContent = f.tag;
+                kepala.append(h, tag);
+
+                const p = document.createElement('p');
+                p.className = 'text-xs sm:text-[13px] leading-relaxed text-stone-500';
+                p.textContent = f.desc;
+
+                kartu.append(kepala, p);
+                wadah.appendChild(kartu);
+            });
+        }
+
+        renderFitur();
 
         async function startPhotobooth() {
             capturedPhotos = [];
