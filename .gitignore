@@ -1,0 +1,28 @@
+# deps
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-error.log*
+*.log
+
+# os / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+
+# build / deploy
+dist/
+build/
+.vercel/
+.netlify/
+
+# env
+.env
+.env.local
+
+# local scratch
+*.log

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Momentara — e2e camera test</title>
+<style>
+  body { margin:0; font: 13px ui-monospace, monospace; background:#111; color:#eee; padding:10px }
+  iframe { width: 760px; height: 820px; border:1px solid #444; background:#000 }
+  #log { white-space:pre-wrap; }
+  .bad { color:#f87171 } .good { color:#4ade80 }
+</style>
+</head>
+<body>
+<div id="log">booting…</div>
+<iframe id="app" src="/index.html"></iframe>
+
+<script>
+const log = document.getElementById('log');
+const checks = [];
+function say(m, ok) {
+  const line = document.createElement('div');
+  line.textContent = (ok === undefined ? '' : ok ? '  ok  ' : '  FAIL ') + m;
+  line.className = ok === true ? 'good' : ok === false ? 'bad' : '';
+  log.appendChild(line);
+  if (ok !== undefined) checks.push(ok);
+  return ok;
+}
+window.__done = false;
+
+say('script parsed, waiting for iframe load…');
+window.addEventListener('error', e => say('window error: ' + e.message, false));
+
+const app = document.getElementById('app');
+app.addEventListener('load', async () => {
+  say('iframe load event fired');
+  const w = app.contentWindow, d = app.contentDocument;
+  try {
+    await new Promise(r => setTimeout(r, 1200));
+    say('app booted, cards rendered = ' + d.querySelectorAll('.theme-card').length,
+        d.querySelectorAll('.theme-card').length > 0);
+
+    // ---- theme + overlay selection -------------------------------------
+    w.selectTheme('starswars');
+    ['crown', 'shades', 'sparkles'].forEach(id => w.toggleOverlay(id));
+    say('theme card selected = ' + (d.querySelector('.theme-card.selected') || {}).dataset?.theme,
+        d.querySelector('.theme-card.selected')?.dataset.theme === 'starswars');
+    say('overlay chips active = ' + d.querySelectorAll('[data-overlay].on').length,
+        d.querySelectorAll('[data-overlay].on').length === 3);
+
+    // ---- search filter --------------------------------------------------
+    d.getElementById('theme-search').value = 'romance';
+    d.getElementById('theme-search').dispatchEvent(new w.Event('input'));
+    await new Promise(r => setTimeout(r, 50));
+    const romanceNames = [...d.querySelectorAll('.theme-card')].map(c => c.dataset.theme);
+    say('search "romance" → [' + romanceNames.join(',') + ']',
+        romanceNames.length === 3 && romanceNames.includes('romance') && !romanceNames.includes('noir'));
+    d.getElementById('theme-search').value = 'zzzznope';
+    d.getElementById('theme-search').dispatchEvent(new w.Event('input'));
+    await new Promise(r => setTimeout(r, 50));
+    say('empty state shown for no match', !d.getElementById('theme-empty').classList.contains('hidden'));
+    d.getElementById('theme-search').value = '';
+    d.getElementById('theme-search').dispatchEvent(new w.Event('input'));
+    await new Promise(r => setTimeout(r, 50));
+
+    // ---- capture pipeline with a synthetic video source -----------------
+    // A <canvas> wearing videoWidth/videoHeight plays the part of the <video>.
+    const fake = document.createElement('canvas');
+    fake.width = 640; fake.height = 480;
+    const fx = fake.getContext('2d');
+    fx.fillStyle = '#0ea5e9'; fx.fillRect(0, 0, 640, 480);
+    fx.fillStyle = '#fde047';
+    fx.beginPath(); fx.arc(320, 200, 90, 0, 7); fx.fill();
+    Object.defineProperty(fake, 'videoWidth', { get: () => 640 });
+    Object.defineProperty(fake, 'videoHeight', { get: () => 480 });
+
+    for (let i = 0; i < 3; i++) w.captureFrame(fake);
+    say('captured 3 frames via app code', true);
+
+    w.stopStream();                     // make sure nothing holds the camera
+    w.processPhotos();
+    await new Promise(r => setTimeout(r, 3000));
+
+    // ---- result view ----------------------------------------------------
+    const img = d.getElementById('final-image');
+    const shown = !d.getElementById('result-content').classList.contains('hidden');
+    const loader = d.getElementById('processing-loader').classList.contains('hidden');
+    say('result panel shown', shown);
+    say('processing loader hidden', loader);
+
+    const probe = new Image();
+    await new Promise(res => { probe.onload = res; probe.onerror = res; probe.src = img.src; });
+    say('strip is 600×1600 PNG (' + probe.naturalWidth + '×' + probe.naturalHeight + ')',
+        probe.naturalWidth === 600 && probe.naturalHeight === 1600);
+    say('strip has real pixels (' + (img.src || '').length + ' data-url chars)',
+        (img.src || '').length > 20000);
+
+    // sample the strip: overlays must have painted pixels of their own colour
+    const sc = document.createElement('canvas');
+    sc.width = 600; sc.height = 1600;
+    const sx = sc.getContext('2d');
+    sx.drawImage(probe, 0, 0);
+    const px = (x, y) => { const p = sx.getImageData(x, y, 1, 1).data; return [p[0], p[1], p[2]]; };
+    const crownPix = px(300, 75);                 // top-centre: crown band
+    say('crown painted near top-centre rgb(' + crownPix + ')', crownPix[0] > 200 && crownPix[1] > 140);
+
+    // ---- cancel path: no leaked session / no stuck spinner -------------
+    w.stopCamera();
+    await new Promise(r => setTimeout(r, 100));
+    const captureBtn = d.getElementById('btn-capture');
+    say('capture button restored after cancel',
+        !captureBtn.classList.contains('invisible') && !captureBtn.classList.contains('hidden'));
+    say('video srcObject released', d.getElementById('video-element').srcObject === null);
+
+    // ---- download path builds a blob URL -------------------------------
+    // NOTE: the anchor is created inside the iframe, so the prototype patch
+    // must live in the iframe's realm, not the parent's.
+    let captured = null;
+    const iframeClick = w.HTMLAnchorElement.prototype.click;
+    w.HTMLAnchorElement.prototype.click = function () {
+      captured = { download: this.download, href: String(this.href).slice(0, 5), inDoc: document.contains(this) };
+    };
+    w.downloadImage();
+    await new Promise(r => setTimeout(r, 800));
+    w.HTMLAnchorElement.prototype.click = iframeClick;
+    say('download anchor: ' + JSON.stringify(captured),
+        !!captured && captured.href === 'blob:' && /\.png$/.test(captured.download || ''));
+
+    const passed = checks.filter(Boolean).length, total = checks.length;
+    say('RESULT ' + passed + '/' + total, passed === total);
+    window.__checks = { passed, total };
+    document.title = 'done';
+  } catch (e) {
+    say('EXCEPTION: ' + (e && e.stack || e), false);
+    document.title = 'done';
+  }
+  window.__done = true;
+});
+</script>
+</body>
+</html>

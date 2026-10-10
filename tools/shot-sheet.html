@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Momentara — shot</title>
+<style>
+  body { margin:0; background:#E7E5E4; font-family: system-ui, sans-serif; }
+  #sheet { display:grid; grid-template-columns: repeat(6, 1fr); gap:14px; padding:16px; }
+  figure { margin:0; background:#fff; border-radius:10px; overflow:hidden;
+           box-shadow: 0 2px 10px rgba(0,0,0,.10); }
+  canvas { display:block; width:100%; height:auto; }
+  figcaption { font-size:11px; padding:6px 8px; color:#57534E; font-weight:600; }
+</style>
+</head>
+<body>
+<div id="sheet"></div>
+<script>
+(async () => {
+  const html = await (await fetch('../index.html')).text();
+  const blocks = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  const api = {};
+  new Function('__o', blocks[blocks.length - 1] +
+    `;Object.assign(__o,{THEMES,composeStrip,setOverlays(l){OVERLAYS_ACTIVE=l;}});`)(api);
+
+  function photo(i) {
+    const c = document.createElement('canvas');
+    c.width = 500; c.height = 375;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 500, 375);
+    g.addColorStop(0, ['#fb7185','#38bdf8','#a3e635','#c084fc'][i]);
+    g.addColorStop(1, ['#facc15','#818cf8','#fb923c','#2dd4bf'][i]);
+    x.fillStyle = g; x.fillRect(0, 0, 500, 375);
+    x.fillStyle = 'rgba(0,0,0,.30)';
+    x.beginPath(); x.arc(250, 140, 64, 0, 7); x.fill();
+    x.beginPath(); x.ellipse(250, 380, 150, 130, 0, Math.PI, 0); x.fill();
+    return c;
+  }
+  const shots = [photo(0), photo(1), photo(2)];
+  const picks = [
+    ['toystory', ['crown', 'partyhat']],
+    ['starswars', ['shades', 'sparkles']],
+    ['romance', ['blush']],
+    ['batik', ['catears']],
+    ['polaroid', ['moustache']],
+    ['cyberpunk', ['shades', 'sparkles']]
+  ];
+  const sheet = document.getElementById('sheet');
+  picks.forEach(([id, ovs]) => {
+    api.setOverlays(ovs);
+    const fig = document.createElement('figure');
+    const cv = document.createElement('canvas');
+    cv.width = 600; cv.height = 1600;
+    api.composeStrip(cv.getContext('2d'), api.THEMES[id], shots);
+    const cap = document.createElement('figcaption');
+    cap.textContent = api.THEMES[id].name + (ovs.length ? '  +  ' + ovs.join(' · ') : '');
+    fig.append(cv, cap); sheet.appendChild(fig);
+  });
+  api.setOverlays([]);
+  document.title = 'ready';
+})();
+</script>
+</body>
+</html>

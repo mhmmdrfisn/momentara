@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Momentara — contact sheet</title>
+<style>
+  body { margin: 0; background: #E7E5E4; font-family: system-ui, sans-serif; }
+  #sheet { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; padding: 10px; }
+  figure { margin: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 10px; padding: 4px 6px; color: #444; font-weight: 600; }
+  h2 { grid-column: 1 / -1; margin: 14px 0 2px; font-size: 13px; text-transform: uppercase;
+       letter-spacing: .14em; color: #57534E; }
+</style>
+</head>
+<body>
+<div id="sheet"></div>
+
+<script>
+// Pull the real app code out of index.html so this sheet can never drift
+// from what the app actually renders.
+function fail(e) {
+  document.body.innerHTML = '<pre style="color:#b91c1c;font:13px monospace;padding:20px;white-space:pre-wrap">'
+    + (e && e.stack ? e.stack : String(e)) + '</pre>';
+}
+window.addEventListener('error', ev => fail(ev.error || ev.message));
+
+(async () => {
+ try {
+  const html = await (await fetch('../index.html')).text();
+  const blocks = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  const app = blocks[blocks.length - 1];
+  const api = {};
+  new Function('__out', app + `;Object.assign(__out,{THEMES,OVERLAYS,composeStrip,renderStrip,drawPhoto,slotY,W,H,PHOTO_W,PHOTO_H,
+    setOverlays(l){OVERLAYS_ACTIVE=l;}});`)(api);
+  window.__api = api;
+
+  const { THEMES, OVERLAYS, composeStrip, W, H } = api;
+  const sheet = document.getElementById('sheet');
+  const dpr = 1;
+
+  // synthetic "photo" so framing/cover/overlay behaviour is visible
+  function fakePhoto(i) {
+    const c = document.createElement('canvas');
+    c.width = W - 100; c.height = Math.round((W - 100) / (4 / 3));
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, c.width, c.height);
+    g.addColorStop(0, ['#fb7185', '#38bdf8', '#a3e635'][i]);
+    g.addColorStop(1, ['#facc15', '#818cf8', '#fb923c'][i]);
+    x.fillStyle = g; x.fillRect(0, 0, c.width, c.height);
+    x.fillStyle = 'rgba(0,0,0,.32)';
+    x.beginPath(); x.arc(c.width / 2, c.height * .38, c.height * .17, 0, 7); x.fill();
+    x.beginPath(); x.ellipse(c.width / 2, c.height * .98, c.width * .3, c.height * .34, 0, Math.PI, 0); x.fill();
+    return c;
+  }
+  const photos = [fakePhoto(0), fakePhoto(1), fakePhoto(2)];
+
+  const param = new URLSearchParams(location.search);
+  const mode = param.get('mode') || 'themes';
+
+  if (mode === 'overlays') {
+    const h = document.createElement('h2'); h.textContent = 'overlays × base themes'; sheet.appendChild(h);
+    const combos = [[], ['crown'], ['shades'], ['moustache'], ['partyhat'], ['catears'], ['blush'], ['sparkles']];
+    combos.forEach(set => {
+      api.setOverlays(set);
+      ['aura', 'toystory', 'noir', 'romance'].forEach(id => {
+        const fig = document.createElement('figure');
+        const cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        composeStrip(cv.getContext('2d'), THEMES[id], photos);
+        const cap = document.createElement('figcaption');
+        cap.textContent = (set.join('+') || 'none') + ' / ' + THEMES[id].name;
+        fig.append(cv, cap); sheet.appendChild(fig);
+      });
+    });
+    api.setOverlays([]);
+  } else if (mode === 'all-overlays') {
+    const h = document.createElement('h2'); h.textContent = 'every overlay stacked on one strip'; sheet.appendChild(h);
+    api.setOverlays(Object.keys(OVERLAYS));
+    const fig = document.createElement('figure');
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    composeStrip(cv.getContext('2d'), THEMES.terrazzo, photos);
+    fig.appendChild(cv); sheet.appendChild(fig);
+    api.setOverlays([]);
+  } else {
+    Object.entries(THEMES).forEach(([id, theme]) => {
+      const fig = document.createElement('figure');
+      const cv = document.createElement('canvas');
+      cv.width = W * dpr; cv.height = H * dpr;
+      composeStrip(cv.getContext('2d'), theme, photos);
+      const cap = document.createElement('figcaption');
+      cap.textContent = theme.group + ' · ' + theme.name;
+      fig.append(cv, cap); sheet.appendChild(fig);
+    });
+  }
+  document.title = 'ready';
+ } catch (e) { fail(e); }
+})();
+</script>
+</body>
+</html>
