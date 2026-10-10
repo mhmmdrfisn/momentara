@@ -211,9 +211,8 @@
 
                     <div class="mt-5 text-stone-600 text-sm sm:text-base leading-relaxed max-w-2xl">
                         <p>
-                            <strong class="text-primary">Momentara</strong> adalah photobooth berbasis web yang mengubah kamera HP atau laptop menjadi bilik foto instan.
-                            Pengguna memilih bingkai, menekan satu tombol, lalu tiga foto diambil beruntun dan langsung disusun menjadi satu strip PNG.
-                            Seluruh gambar digambar di <code class="text-[13px] bg-stone-100 px-1.5 py-0.5 rounded-md">canvas</code> perangkat sendiri — tanpa server, tanpa unggahan, tanpa akun.
+                            Aplikasi web-based photobooth yang mengubah kamera HP atau laptop Anda menjadi bilik foto instan yang seru.
+                            Pengguna dapat langsung berpose, memilih berbagai desain frame yang unik dan estetik, serta mengunduh dengan kualitas tinggi untuk langsung dibagikan ke media sosial.
                         </p>
                     </div>
 
@@ -359,10 +358,10 @@
                 url: "#"
             },
             {
-                judul: "Momentara",
-                desc: "Aplikasi web-based photobooth yang mengubah kamera HP atau laptop Anda menjadi bilik foto instan yang seru. Pengguna dapat langsung berpose, memilih berbagai desain frame yang unik dan estetik, serta mengunduh dengan kualitas tinggi untuk langsung dibagikan ke media sosial.",
+                judul: "SimpleCalc",
+                desc: "Aplikasi SimplexCalc dirancang khusus untuk membantu dan mempercepat proses pengerjaan manual algoritma programa linear dengan Metode Simpleks dan Big-M. Dilengkapi dengan kalkulator matriks aljabar yang matematis, sehingga terhindar dari kesalahan hitung dan bisa fokus pada pemahaman logika iterasi.",
                 tag: "Javascript / HTML / TailWind",
-                url: "https://momentara-bytexindonesia.netlify.app/",
+                url: "#",
                 ini: true
             },
             {
@@ -416,27 +415,20 @@
                     kartu.rel = 'noopener';
                 }
 
-                const kepala = document.createElement('div');
-                kepala.className = 'flex items-start justify-between gap-3 mb-2';
-
-                const kiri = document.createElement('div');
-                kiri.className = 'flex items-center gap-2 min-w-0';
                 const judul = document.createElement('h4');
-                judul.className = 'text-sm font-bold text-primary leading-snug truncate';
+                judul.className = 'text-sm font-bold text-primary leading-snug';
                 judul.textContent = p.judul;
-                kiri.appendChild(judul);
+
+                const kepala = document.createElement('div');
+                kepala.className = 'mb-2 flex flex-wrap items-center gap-2';
+                kepala.appendChild(judul);
 
                 if (p.ini) {
                     const tanda = document.createElement('span');
                     tanda.className = 'shrink-0 text-[9px] font-bold uppercase tracking-wider text-white bg-primary rounded-full px-2 py-0.5';
                     tanda.textContent = 'Proyek ini';
-                    kiri.appendChild(tanda);
+                    kepala.appendChild(tanda);
                 }
-
-                const tag = document.createElement('span');
-                tag.className = 'shrink-0 text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full px-2.5 py-1';
-                tag.textContent = p.tag;
-                kepala.append(kiri, tag);
 
                 const isi = document.createElement('div');
                 const ket = document.createElement('p');
@@ -444,13 +436,23 @@
                 ket.textContent = p.desc;
                 isi.appendChild(ket);
 
+                // tag dan tautan diletakkan di bawah deskripsi
+                const kaki = document.createElement('div');
+                kaki.className = 'mt-3 flex flex-wrap items-center gap-2';
+
+                const tag = document.createElement('span');
+                tag.className = 'text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full px-2.5 py-1';
+                tag.textContent = p.tag;
+                kaki.appendChild(tag);
+
                 if (hidup) {
                     const tautan = document.createElement('span');
-                    tautan.className = 'mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400';
+                    tautan.className = 'inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400';
                     tautan.innerHTML = 'Buka situs <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
-                    isi.appendChild(tautan);
+                    kaki.appendChild(tautan);
                 }
 
+                isi.appendChild(kaki);
                 kartu.append(kepala, isi);
                 wadah.appendChild(kartu);
             });
