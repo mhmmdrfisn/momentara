@@ -1,113 +1,93 @@
 # Momentara
 
-A photobooth that lives in a single HTML file. Pick a frame, stack some ridiculous overlays on top, tap once, and get a three-shot strip you can download. Everything renders locally on a `<canvas>` — no upload, no account, no server.
+Photobooth yang hidup di satu file HTML. Pilih bingkai, tumpuk overlay lucu di atas foto, tekan sekali, lalu unduh strip berisi tiga foto Anda.
 
-![Momentara home screen showing the frame picker](docs/home.png)
-
-![Six finished strips: Toy Pop, Stars Wars, Love Letter, Batik Parang, Polaroid and Neon Grid, each with different overlays applied](docs/strips.png)
+Semua digambar langsung di `<canvas>` di perangkat Anda sendiri — tidak ada unggahan, tidak ada akun, tidak ada server.
 
 ---
 
-## Try it
+## Menjalankan
+
+Butuh **server lokal** agar browser mengizinkan akses kamera. `file://` tidak cukup karena `getUserMedia` hanya jalan di origin aman.
 
 ```bash
 git clone https://github.com/mhmmdrfisn/momentara.git
 cd momentara
-python -m http.server 8000     # or: npx serve, php -S localhost:8000, …
+python -m http.server 8000
 ```
 
-Open <http://localhost:8000>.
+Buka <http://localhost:8000>.
 
-**A local server is required.** Browsers only expose `getUserMedia` on a secure origin, and `file://` does not qualify. `localhost` counts as secure, so the one-line server above is enough — you do not need HTTPS.
-
-Everything else is optional. `index.html` is fully self-contained: open it directly and the frame gallery, search and previews all work; only the camera button needs a server.
+Alternatif: `npx serve`, `php -S localhost:8000`, atau Live Server dari VS Code.
 
 ---
 
-## What it does
+## Fitur
 
-- **Three automated shots.** One tap, a 3-2-1 countdown per shot, white flash between frames.
-- **38 frames**, grouped into Elegance, Fresh, Cosmic, Playful, Romance, Culture, Vintage and Minimal.
-- **7 funny overlays** — crown, shades, moustache, party hat, cat ears, blush, sparkles — drawn *on top of* the photo. Stack as many as you like on any frame.
-- **Live previews.** Each card is rendered by the exact same code that renders the final strip, so a preview can never lie about what you'll get.
-- **Search** across frame names and groups, plus **Surprise me** for a random pick.
-- **Retake** without reloading, and a download named after the frame you chose.
-- **Remembers your last frame and overlays** in `localStorage`.
-- Mirrors the preview by default (like a real mirror) and crops every shot to a consistent 4:3.
+- **Tiga foto otomatis.** Satu kali tekan, hitung mundur 3-2-1 per foto, kilau putih di antar foto.
+- **38 bingkai**, dikelompokkan menjadi Elegan, Segar, Kosmik, Lucu, Romans, Budaya, Vintage, dan Minimal.
+- **7 overlay lucu** — Mahkota, Kacamata, Kumis, Topi Pesta, Teling Kucing, Merona, Kilau — digambar *di atas* foto. Bisa ditumpuk sebanyak apa pun pada bingkai mana pun.
+- **Pratinjau jujur.** Setiap kartu dirender oleh kode yang sama dengan strip akhir, jadi pratinjau tidak mungkin menampilkan sesuatu yang berbeda dari hasil sebenarnya.
+- **Cari bingkai** berdasarkan nama atau kelompok, plus tombol **Acak** untuk pilihan acak.
+- **Ulangi** tanpa memuat ulang halaman, dan nama file unduhan mengikuti bingkai yang Anda pilih.
+- **Ingat pilihan terakhir** lewat `localStorage`.
+- Foto dicerminkan seperti cermin sungguhan dan dipotong konsisten rasio 4:3.
 
 ---
 
-## How it's put together
+## Struktur
 
-There is no build step and no framework. `index.html` contains the markup, the styles, and one script that defines three things:
+Tidak ada build step, tidak ada framework. `index.html` berisi markup, gaya, dan satu skrip yang mendefinisikan tiga hal:
 
 ```
-helpers    rr() seeded() star5() heart() leaf() …   drawing primitives
-THEMES     38 entries                               frame definitions
-OVERLAYS   7 entries                                on-photo marks
+pembantu    rr() acak() bintang() hati() daun() …    primitif gambar
+BININGKAI   38 entri                                definisi bingkai
+OVERLAY     7 entri                                 corak di atas foto
 ```
 
-A theme is pure data plus two draw functions:
+Sebuah bingkai adalah data murni plus dua fungsi gambar:
 
 ```js
 batik: {
-  name: 'Batik Parang',
-  group: 'Culture',
-  photo: { radius: 8, stroke: { color: '#F5F3FF', width: 4 } },
-  bg(ctx, w, h) { /* paint the 600×1600 backdrop */ },
-  title: { text: 'BATIK PARANG', font: `700 30px ${F_SANS}`, color: '#FDE68A' }
+  nama: 'Batik Parang',
+  grup: 'Budaya',
+  foto: { radius: 8, garis: { warna: '#F5F3FF', lebar: 4 } },
+  bg(ctx, w, h) { /* gambar latar 600×1600 */ },
+  judul: { teks: 'BATIK PARANG', font: `700 30px ${SANS}`, warna: '#FDE68A' }
 }
 ```
 
-`composeStrip()` then runs: `bg()` → three `drawPhoto()` calls → optional `onTop()` → title → footer.
+Lalu `composeStrip()` menjalankan: `bg()` → tiga `gambarFoto()` → `atas()` opsional → judul → kaki.
 
-Two details worth knowing if you extend it:
+Dua hal yang perlu diketahui bila ingin menambah bingkai:
 
-- **Randomness is seeded.** Anything procedural calls `seeded(themeId)` rather than `Math.random()`, so the starfield and terrazzo chips land in the same place every time you re-render the same frame. That is what lets a preview match its output.
-- **`photo` is a recipe, not a special case.** `{ mat, pad, radius, stroke, shadow }` is interpreted by one shared function, so the old copy-pasted `if (selectedTheme === 'velvet')` branches are gone.
+- **Keacakan memakai benih.** Semua pola prosedural memanggil `acak(namaBingkai)`, bukan `Math.random()`. Jadi taburan bintang dan serpihan terrazzo selalu muncul di tempat yang sama setiap kali digambar ulang. Itulah yang membuat pratinjau cocok dengan hasilnya.
+- **`foto` itu resep, bukan kondisi khusus.** `{ alas, ruang, radius, garis, bayang }` dibaca oleh satu fungsi yang sama, sehingga percabangan `if (selectedTheme === 'velvet')` yang lama sudah hilang.
 
-### Adding a frame
+### Menambah bingkai
 
-Append an entry to `THEMES` and that's it — the gallery, previews, search, grouping and download filename all pick it up automatically. Reuse `lin()`, `rad()`, `star5()`, `heart()`, `leaf()`, `frond()`, `burst()`, `stars()` and `seeded()` rather than reaching for `Math.random()`.
+Tambahkan satu entri ke `BININGKAI`. Galeri, pratinjau, pencarian, pengelompokan, dan nama file unduhan semuanya menyesuaikan sendiri. Pakai ulang `gradien()`, `radial()`, `bintang()`, `hati()`, `daun()`, `pelangi()`, `ledakan()`, `bintangLatar()`, dan `acak()` daripada memanggil `Math.random()`.
 
-### Adding an overlay
+### Menambah overlay
 
-Append to `OVERLAYS` with a `label`, a `swatch` colour for the chip, and an `fn(ctx, w, h)` that draws in **photo-local coordinates** (`0,0` is the photo's top-left). `drawPhoto()` handles the clipping and the translate for you.
-
----
-
-## Tests
-
-Rendering is pure canvas code, so it can be checked without a browser and without a canvas library.
-
-```bash
-node tools/smoke-test.js    # every theme × {real, missing, partial} photos + every overlay
-node tools/e2e-run.js       # drives real Chrome over CDP against a live camera
-node tools/serve.js         # static server on :8123, required by the browser suites
-```
-
-`smoke-test.js` extracts the inline script straight out of `index.html`, runs it against a stub 2D context, and asserts every render path executes, every theme has a complete title spec, seeded RNGs are deterministic and distinct, and `rr()` survives degenerate sizes. It fails loudly on the first throw.
-
-`e2e-run.js` launches headless Chrome over the DevTools protocol with a fake capture device, runs the full flow — select frame, toggle overlays, search, capture three frames, develop the strip, cancel, download — and checks the result view, the 600×1600 PNG dimensions, that overlay pixels really landed on the photo, that the camera track was released, and that the download anchor gets a `blob:` URL with a `.png` filename. It exits non-zero on any failure or uncaught console error, so it works as a CI gate. No npm dependencies: Node's built-in `WebSocket` is enough.
-
-`tools/contact-sheet.html?mode=themes|overlays|all-overlays` renders every frame and overlay combination on one page for visual review. It reads `index.html` too, so it can't drift from the app.
+Tambahkan ke `OVERLAY` dengan `label`, warna `sw` untuk chip, dan `fn(ctx, w, h)` yang menggambar dalam **koordinat lokal foto** (`0,0` adalah pojok kiri atas foto). `gambarFoto()` sudah mengurus pemotongan dan pergeseran koordinat.
 
 ---
 
-## Privacy
+## Privasi
 
-Photos are never transmitted. They go from the camera straight into an offscreen canvas and out to a `blob:` URL for download. No network calls after the page loads, no analytics, no cookies. The only persisted state is your chosen frame and overlays, in `localStorage`, and clearing site data removes it.
+Foto tidak pernah dikirim ke mana pun. Alirannya langsung dari kamera ke canvas di luar layar, lalu ke `blob:` URL untuk diunduh. Tidak ada panggilan jaringan setelah halaman dimuat, tidak ada analitik, tidak ada cookie. Satu-satunya data yang disimpan adalah bingkai dan overlay pilihan Anda di `localStorage`, dan itu terhapus bersama data situs.
 
-The camera stream is released on capture, on cancel, on tab hide, and on `pagehide`, and an in-flight countdown is cancelled via a session token so a late timer can't fire into a view you've already left.
-
----
-
-## Requirements
-
-Any current Chrome, Edge, Firefox or Safari. Uses `getUserMedia`, `<canvas>`, `IntersectionObserver` (lazy previews) and `OffscreenCanvas`-free 2D context — all broadly supported. Tested on Chrome.
+Aliran kamera dilepas setelah pemotretan, saat dibatalkan, saat tab disembunyikan, dan saat halaman ditutup. Hitung mundur yang sedang berjalan dibatalkan lewat token sesi, sehingga tidak ada timer yang masih berjalan menembak ke layar yang sudah ditinggalkan.
 
 ---
 
-## License
+## Kebutuhan
 
-[MIT](LICENSE) © 2026 Momentara contributors
+Chrome, Edge, Firefox, atau Safari versi terkini. Memakai `getUserMedia`, `<canvas>`, dan `IntersectionObserver` (untuk pratinjau malas). Kamera memerlukan origin aman — `localhost` sudah cukup.
+
+---
+
+## Lisensi
+
+[MIT](LICENSE) © 2026 mhmmdrfisn
