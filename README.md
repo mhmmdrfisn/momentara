@@ -134,4 +134,4 @@ Browser Chromium, Firefox, atau Safari versi terkini, dengan kamera dan mikrofon
 
 ## Lisensi
 
-[MIT](LICENSE) © 2026 mhmmdrfisn
+[MIT](LICENSE) Copyright (c) 2026 Rafi Sanjaya
