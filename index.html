@@ -1,1701 +1,486 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#1C1917">
-<meta name="description" content="Momentara — photobooth privat di browser. Pilih bingkai, tambah overlay lucu, ambil tiga foto, unduh hasilnya.">
-<title>Momentara · Photobooth</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%231C1917'/%3E%3Crect x='26' y='20' width='48' height='34' rx='6' fill='%23FAFAF9'/%3E%3Ccircle cx='50' cy='37' r='9' fill='%231C1917'/%3E%3Cpath d='M32 76c0-10 8-16 18-16s18 6 18 16z' fill='%231C1917'/%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600;1,700&family=Fredoka:wght@600;700&family=Space+Mono:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Momentara | Photobooth</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#1C1917', secondary: '#FAFAF9' },
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'], serif: ['Playfair Display', 'serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #FAFAF9; color: #1C1917; overflow-x: hidden; }
+        .view-container { display: none; opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .view-container.active { display: flex; opacity: 1; }
+        ::-webkit-scrollbar { display: none; }
 
-<style>
-  :root {
-    --hitam:  #1C1917;
-    --krem:   #FAFAF9;
-    --teks:   #1C1917;
-  }
+        /* THEME CARD INTERACTION & ANTI-DRAG */
+        .theme-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-user-drag: none;
+            touch-action: manipulation;
+        }
+        
+        .theme-card:hover { transform: translateY(-4px); }
+        .theme-card:active { transform: scale(0.96); } 
+        .theme-card * { pointer-events: none; }
+        
+        .check-badge {
+            opacity: 0; transform: scale(0.5); 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .theme-card.selected {
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1);
+            border-color: #1C1917;
+            z-index: 10;
+        }
+        .theme-card.selected .check-badge { opacity: 1; transform: scale(1); }
 
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--krem);
-    color: var(--teks);
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-  .serif { font-family: 'Playfair Display', Georgia, serif; }
-  .lucu  { font-family: 'Fredoka', 'Plus Jakarta Sans', sans-serif; }
-  .mono  { font-family: 'Space Mono', ui-monospace, monospace; }
-  .tulis { font-family: 'Caveat', cursive; }
-
-  ::-webkit-scrollbar { display: none; }
-  * { scrollbar-width: none; }
-
-  /* ── Layar ── */
-  .layar { display: none; }
-  .layar.aktif { display: flex; }
-
-  /* ── Kartu bingkai ── */
-  .kartu {
-    position: relative;
-    cursor: pointer;
-    background: #fff;
-    border: 2px solid #E7E5E4;
-    border-radius: 16px;
-    padding: 8px;
-    transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s, border-color .25s;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-  .kartu:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -8px rgba(0,0,0,.18); }
-  .kartu:active { transform: scale(.96); }
-  .kartu:focus-visible { outline: 3px solid var(--hitam); outline-offset: 3px; }
-  .kartu.terpilih { border-color: var(--hitam); box-shadow: 0 12px 24px -8px rgba(0,0,0,.22); }
-
-  .kartu .gambar { display: block; width: 100%; border-radius: 10px; background: #F5F5F4; overflow: hidden; }
-  .kartu canvas { display: block; width: 100%; height: auto; }
-
-  .centang {
-    position: absolute; top: -10px; right: -10px;
-    width: 26px; height: 26px;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--hitam); color: #fff;
-    border-radius: 999px;
-    box-shadow: 0 4px 10px rgba(0,0,0,.25);
-    opacity: 0; transform: scale(.4);
-    transition: opacity .2s, transform .3s cubic-bezier(.34,1.56,.64,1);
-    pointer-events: none;
-  }
-  .kartu.terpilih .centang { opacity: 1; transform: scale(1); }
-
-  /* ── Chip overlay ── */
-  .chip {
-    cursor: pointer; flex-shrink: 0;
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    width: 74px; padding: 8px 0;
-    background: #fff; border: 2px solid #E7E5E4; border-radius: 14px;
-    transition: all .2s cubic-bezier(.34,1.56,.64,1);
-    user-select: none; -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .chip:hover { border-color: #A8A29E; }
-  .chip:active { transform: scale(.94); }
-  .chip:focus-visible { outline: 3px solid var(--hitam); outline-offset: 2px; }
-  .chip.on { background: var(--hitam); border-color: var(--hitam); color: #fff; }
-  .chip canvas { display: block; border-radius: 6px; }
-  .chip span { font-size: 10px; font-weight: 600; }
-
-  /* ── Tombol ── */
-  .tombol {
-    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-    cursor: pointer; border: 0; font: inherit; font-weight: 600;
-    border-radius: 14px;
-    transition: transform .2s, background .2s, box-shadow .2s, border-color .2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .tombol:focus-visible { outline: 3px solid var(--hitam); outline-offset: 3px; }
-  .tombol:active { transform: scale(.97); }
-  .tombol:disabled { opacity: .5; cursor: not-allowed; }
-
-  .tombol-utama { background: var(--hitam); color: #fff; padding: 16px; width: 100%; box-shadow: 0 10px 20px -8px rgba(0,0,0,.4); }
-  .tombol-utama:hover:not(:disabled) { background: #000; }
-  .tombol-utama svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-  .tombol-sekunder { background: #fff; color: var(--hitam); border: 1px solid #E7E5E4; padding: 16px 8px; }
-  .tombol-sekunder:hover { background: #FAFAF9; border-color: #D6D3D1; }
-
-  .tombol-hantu { background: #fff; border: 1px solid #E7E5E4; border-radius: 12px; padding: 10px 14px;
-                  font-size: 14px; font-weight: 600; color: #57534E; cursor: pointer; font-family: inherit; }
-  .tombol-hantu:hover { border-color: #A8A29E; color: var(--hitam); }
-
-  /* ── Kamera ── */
-  .kotak-video { position: relative; overflow: hidden; background: #18181B; border-radius: 24px; }
-  #video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-
-  #kilat { position: absolute; inset: 0; background: #fff; opacity: 0; transition: opacity .12s; pointer-events: none; }
-  #kilat.nyala { opacity: 1; }
-
-  /* Penting: cincin dekoratif TIDAK boleh menutupi tombol shutter. */
-  .cincin { position: absolute; inset: -6px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px;
-            pointer-events: none; animation: denyut 2.4s cubic-bezier(.4,0,.2,1) infinite; }
-  @keyframes denyut { 0% { transform: scale(1); opacity: .5 } 70% { transform: scale(1.12); opacity: 0 } 100% { opacity: 0 } }
-
-  .shutter {
-    position: relative; z-index: 2;
-    width: 76px; height: 76px; border-radius: 999px;
-    border: 4px solid rgba(255,255,255,.85);
-    background: transparent;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; padding: 0;
-    transition: transform .15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .shutter:hover { transform: scale(1.04); }
-  .shutter:active { transform: scale(.95); }
-  .shutter:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-  .shutter span { width: 56px; height: 56px; border-radius: 999px; background: #fff; transition: background .2s; }
-  .shutter:hover span { background: #E7E5E4; }
-  .shutter.sembunyi { visibility: hidden; }
-
-  #hitung { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 9rem; font-weight: 800; color: #fff; opacity: 0;
-            transition: opacity .2s; text-shadow: 0 4px 24px rgba(0,0,0,.5); pointer-events: none; }
-
-  .memuat { width: 30px; height: 30px; border: 2px solid #E7E5E4; border-top-color: var(--hitam);
-           border-radius: 999px; animation: putar .9s linear infinite; }
-  @keyframes putar { to { transform: rotate(360deg) } }
-
-  #toast {
-    position: fixed; top: 20px; left: 50%;
-    transform: translate(-50%, -120%);
-    display: flex; align-items: center; gap: 10px;
-    max-width: calc(100vw - 32px);
-    padding: 12px 20px;
-    background: var(--hitam); color: #fff;
-    border-radius: 999px; font-size: 14px; font-weight: 500;
-    box-shadow: 0 12px 30px -8px rgba(0,0,0,.4);
-    opacity: 0; pointer-events: none;
-    transition: transform .4s cubic-bezier(.4,0,.2,1), opacity .3s;
-    z-index: 100;
-  }
-  #toast.tampil { transform: translate(-50%, 0); opacity: 1; }
-
-  .halaman { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
-  .grup-judul { font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #D6D3D1; margin-bottom: 16px; }
-  .label { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #A8A29E; }
-
-  /* Tata letak: satu kolom di ponsel, dua kolom di layar lebar */
-  .tata { display: grid; gap: 40px; grid-template-columns: 1fr; align-items: start; }
-  @media (min-width: 1024px) {
-    .tata { grid-template-columns: minmax(0,340px) minmax(0,1fr); gap: 56px; }
-    .tata > header { position: sticky; top: 48px; }
-  }
-
-  /* Kisi bingkai menyesuaikan lebar layar */
-  .kisi-bingkai { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0,1fr)); }
-  @media (min-width: 640px)  { .kisi-bingkai { gap: 20px; grid-template-columns: repeat(3, minmax(0,1fr)); } }
-  @media (min-width: 1280px) { .kisi-bingkai { grid-template-columns: repeat(4, minmax(0,1fr)); } }
-  @media (min-width: 1600px) { .kisi-bingkai { grid-template-columns: repeat(5, minmax(0,1fr)); } }
-
-  /* Panel tombol di layar kamera */
-  @media (min-width: 768px) {
-    .kotak-video { height: auto !important; aspect-ratio: 4 / 3; max-width: min(1000px, 100%); }
-  }
-  /* Jaga agar panel tombol di bawah tidak pernah menimpa video. */
-  .kotak-video { max-height: calc(100dvh - 210px); }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-  }
-</style>
+        /* Camera UI */
+        #video-element { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #flash-overlay { opacity: 0; transition: opacity 0.1s ease-out; }
+        .flash-active { opacity: 1 !important; z-index: 50; }
+        .loader { border: 2px solid #E5E5E5; border-top: 2px solid #1C1917; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
+<body class="antialiased selection:bg-stone-200 text-primary relative">
 
-<body>
+    <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] bg-primary text-white px-6 py-3 rounded-full shadow-2xl transition-all duration-500 -translate-y-24 opacity-0 flex items-center gap-3 text-sm font-medium whitespace-nowrap"></div>
 
-<div id="toast" role="status" aria-live="polite"></div>
-
-<!-- ══════════════════ LAYAR PEMILIHAN ══════════════════ -->
-<div id="layar-pilih" class="layar aktif halaman">
-  <div style="max-width:1400px;width:100%;margin:0 auto;padding:32px 24px 96px">
-
-    <div class="tata">
-
-      <header>
-        <h1 class="serif" style="font-size:clamp(2.75rem,7vw,4.5rem);line-height:1;margin:0 0 16px;letter-spacing:-.02em">Momentara.</h1>
-        <p style="color:#78716C;font-size:15px;line-height:1.7;max-width:34rem;margin:0 0 28px">
-          Pilih bingkai, tambahkan overlay lucu, lalu ambil tiga foto.
-          Semuanya digambar langsung di perangkat Anda — tidak ada yang diunggah atau disimpan.
-        </p>
-        <button id="tombol-mulai" class="tombol tombol-utama" style="max-width:24rem">
-          <span>Aktifkan Kamera</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
-        <p style="color:#A8A29E;font-size:11px;line-height:1.7;margin-top:16px">
-          Berjalan lokal setelah halaman terbuka · Tanpa akun · Tanpa unggahan<br>
-          <span id="ringkasan" style="color:#57534E;font-weight:600"></span>
-        </p>
-      </header>
-
-      <div>
-        <!-- Overlay lucu -->
-        <section style="margin-bottom:40px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <h2 class="label">Overlay Lucu</h2>
-            <button id="tombol-hapus-overlay" class="tombol-hantu" style="font-size:11px;padding:6px 10px" hidden>Hapus semua</button>
-          </div>
-          <div id="daftar-overlay" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px"></div>
-          <p style="color:#A8A29E;font-size:11px;margin-top:12px;line-height:1.6">
-            Overlay digambar <em>di atas</em> foto. Bisa ditumpuk sebanyak apa pun pada bingkai mana pun.
-          </p>
-        </section>
-
-        <!-- Pilih bingkai -->
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:32px">
-          <h2 class="label">Pilih Bingkai</h2>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button id="tombol-acak" class="tombol-hantu" style="display:inline-flex;align-items:center;gap:8px">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-              Acak
-            </button>
-            <div style="position:relative">
-              <input id="cari" type="search" placeholder="Cari bingkai…" aria-label="Cari bingkai"
-                     style="width:100%;min-width:180px;background:#fff;border:1px solid #E7E5E4;border-radius:12px;
-                            padding:10px 12px 10px 34px;font:inherit;font-size:14px;color:inherit">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#A8A29E" stroke-width="2" stroke-linecap="round"
-                   style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <div id="view-home" class="view-container active flex-col min-h-[100dvh]">
+        <div class="max-w-[1300px] mx-auto w-full flex-grow grid lg:grid-cols-12 gap-10 lg:gap-20 p-6 lg:p-12 items-start">
+            
+            <div class="w-full lg:col-span-4 lg:sticky lg:top-[20vh] text-center lg:text-left pt-8 lg:pt-0">
+                <h1 class="font-serif text-5xl lg:text-7xl font-semibold tracking-tight mb-6">Momentara.</h1>
+                <p class="text-stone-500 text-sm lg:text-base leading-relaxed max-w-md mx-auto lg:mx-0 mb-8">
+                    Capture your elegance. Three automated shots, instantly framed in our signature aesthetics.
+                    Processing entirely on your device for absolute privacy.
+                </p>
+                <button onclick="startPhotobooth()" class="hidden lg:flex w-full max-w-sm bg-primary text-white font-medium py-4 rounded-2xl shadow-xl hover:bg-black hover:shadow-2xl transition-all transform hover:-translate-y-1 justify-center items-center gap-3 focus:outline-none">
+                    Initialize Camera
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </button>
             </div>
-          </div>
+
+            <div class="w-full lg:col-span-8 flex flex-col pb-20 lg:pb-10 pt-4 lg:pt-4">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Select Frame</h3>
+                </div>
+
+                <div id="theme-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
+
+                    <div onclick="selectTheme('aura')" id="theme-aura" class="theme-card selected relative w-full aspect-[2/3] rounded-2xl bg-[#FAFAFA] border-2 border-transparent shadow-sm flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border border-stone-200 bg-white rounded-lg flex flex-col relative z-0 shadow-sm overflow-hidden">
+                            <div class="text-stone-600 font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-slate-600 font-sans text-[11px] sm:text-xs font-semibold tracking-wide mt-3">Aura Blanc</span>
+                    </div>
+
+                    <div onclick="selectTheme('lumina')" id="theme-lumina" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#FAFAF9] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border-2 border-stone-200 rounded-lg flex flex-col relative z-0 overflow-hidden">
+                            <div class="text-stone-600 font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-stone-700 font-sans font-medium text-[11px] sm:text-xs tracking-wide mt-3">Lumina Pearl</span>
+                    </div>
+
+                    <div onclick="selectTheme('linen')" id="theme-linen" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#F5F5F4] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border-2 border-stone-300 rounded-lg flex flex-col relative z-0 overflow-hidden">
+                            <div class="text-stone-700 font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-stone-800 font-sans font-medium text-[11px] sm:text-xs tracking-wide mt-3">Linen Dream</span>
+                    </div>
+
+                    <div onclick="selectTheme('matcha')" id="theme-matcha" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#F0FDF4] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none"><div class="absolute -top-4 -left-4 w-16 h-16 bg-[#DCFCE7] rounded-full"></div></div>
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border-2 border-green-200 rounded-lg flex flex-col relative z-10 overflow-hidden">
+                            <div class="text-green-700 font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-[#166534] font-sans font-medium text-[11px] sm:text-xs tracking-wide mt-3 relative z-10">Matcha Latte</span>
+                    </div>
+
+                    <div onclick="selectTheme('santalus')" id="theme-santalus" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#FFF1F6] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border-2 border-pink-100 rounded-lg flex flex-col relative z-0 overflow-hidden">
+                            <div class="flex-grow bg-white rounded-md relative w-full"><div class="absolute top-1 left-1 w-6 h-6 rounded-full border border-pink-100 opacity-60"></div></div>
+                            <div class="text-pink-700 font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-pink-800 font-sans font-medium text-[11px] sm:text-xs tracking-wide mt-3">Santalus Merpati</span>
+                    </div>
+
+                    <div onclick="selectTheme('cendrawasih')" id="theme-cendrawasih" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#E8FCFD] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border-2 border-cyan-100 rounded-lg flex flex-col relative z-0 overflow-hidden">
+                            <div class="flex-grow bg-white rounded-md w-full relative"><div class="absolute top-1 right-1 w-8 h-px bg-cyan-100 opacity-60"></div></div>
+                            <div class="text-cyan-700 font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-cyan-800 font-sans font-medium text-[11px] sm:text-xs tracking-wide mt-3">Cendrawasih Vetiver</span>
+                    </div>
+
+                    <div onclick="selectTheme('kasmir')" id="theme-kasmir" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#E0F2FE] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none"><div class="absolute -bottom-4 -left-4 w-16 h-16 bg-[#BAE6FD] rounded-full opacity-60"></div></div>
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border-2 border-sky-100 rounded-lg flex flex-col relative z-10 overflow-hidden">
+                            <div class="flex-grow bg-white rounded-md w-full"></div>
+                            <div class="text-sky-700 font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-sky-800 font-sans font-medium text-[11px] sm:text-xs tracking-wide mt-3 relative z-10">Kasmir Kijang</span>
+                    </div>
+
+                    <div onclick="selectTheme('noir')" id="theme-noir" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#111111] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-[#D4AF37] text-primary p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="absolute inset-1.5 border border-[#D4AF37]/50 pointer-events-none rounded-xl"></div>
+                        <div class="w-full h-full p-1.5 border border-[#D4AF37]/30 bg-stone-900 rounded-lg flex flex-col relative z-0 overflow-hidden">
+                            <div class="flex-grow bg-stone-900 rounded-md w-full"></div>
+                            <div class="text-[#D4AF37] font-sans text-[8px] sm:text-[9px] mt-1 text-center font-bold tracking-widest opacity-80 w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-[#D4AF37] font-serif italic text-[12px] sm:text-sm z-0 mt-3">Noir Ébène</span>
+                    </div>
+
+                    <div onclick="selectTheme('velvet')" id="theme-velvet" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#FFF1F2] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-primary text-white p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border-2 border-white bg-white/60 rounded-md flex flex-col relative z-0 overflow-hidden">
+                            <div class="flex-grow rounded-sm bg-white/40 w-full"></div>
+                            <div class="text-[#9F1239] font-sans text-[9px] sm:text-[10px] mt-1 text-center font-bold tracking-tight opacity-90 w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-[#9F1239] font-serif italic text-[12px] sm:text-sm font-medium mt-3">Velvet Rose</span>
+                    </div>
+
+                    <div onclick="selectTheme('oud')" id="theme-oud" class="theme-card relative w-full aspect-[2/3] rounded-2xl bg-[#292524] border-2 border-transparent flex flex-col items-center justify-center p-3 sm:p-4">
+                        <div class="check-badge absolute -top-3 -right-3 bg-[#D6D3D1] text-primary p-1.5 rounded-full shadow-lg z-10"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg></div>
+                        <div class="w-full h-full p-1.5 border border-[#1C1917] border-b-4 border-r-4 bg-[#E7E5E4] flex flex-col relative z-0 overflow-hidden">
+                            <div class="flex-grow bg-[#E7E5E4] w-full"></div>
+                            <div class="text-[#1C1917] font-sans text-[8px] sm:text-[9px] mt-1 text-center font-black tracking-tighter w-full truncate">momentara.studio</div>
+                        </div>
+                        <span class="text-[#D6D3D1] font-sans font-bold text-[10px] sm:text-[11px] tracking-widest uppercase mt-3">Oud Wood</span>
+                    </div>
+
+                </div>
+
+                <div class="lg:hidden mt-2">
+                    <button onclick="startPhotobooth()" class="w-full bg-primary text-white font-medium py-4.5 rounded-2xl shadow-xl hover:bg-black transition-transform transform hover:-translate-y-1 flex justify-center items-center gap-3 h-14">
+                        Initialize Camera
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-camera" class="view-container fixed inset-0 z-40 bg-black flex-col items-center justify-center p-4 md:p-12">
+        <div class="absolute top-0 inset-x-0 p-6 flex justify-between items-center z-30">
+            <button onclick="stopCamera(); switchView('home')" class="text-white/80 hover:text-white text-sm font-medium tracking-wide transition focus:outline-none">Cancel</button>
+            <div class="px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] uppercase tracking-widest font-bold" id="session-counter">Sesi 1 / 3</div>
         </div>
 
-        <div id="daftar-bingkai"></div>
+        <div class="relative w-full max-w-[95vw] md:max-w-[1200px] h-[65vh] md:h-auto md:aspect-video overflow-hidden rounded-[2rem] bg-zinc-900 shadow-[0_0_80px_rgba(0,0,0,0.3)] mx-auto flex-shrink-0 md:mt-10">
+            <video id="video-element" autoplay playsinline muted></video>
+            <div id="flash-overlay" class="absolute inset-0 bg-white pointer-events-none"></div>
+            <div class="hidden md:block absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-[calc(100vh*0.75)] max-w-full border-x-2 border-white/20 pointer-events-none border-dashed z-10"></div>
+            <div id="timer-display" class="absolute inset-0 flex items-center justify-center font-sans text-[10rem] md:text-[15rem] font-bold text-white opacity-0 transition-opacity duration-200 drop-shadow-2xl z-20">3</div>
+        </div>
 
-        <p id="bingo-kosong" style="display:none;text-align:center;color:#A8A29E;padding:64px 0;font-size:14px">
-          Tidak ada bingkai yang cocok dengan <strong id="bingo-kosong-teks"></strong>.
-        </p>
-      </div>
+        <div class="absolute bottom-6 md:bottom-10 inset-x-0 flex justify-center items-center z-30">
+            <button id="btn-capture" onclick="startCaptureSequence()" class="w-20 h-20 rounded-full border-4 border-white/80 flex items-center justify-center hover:scale-95 transition-transform focus:outline-none group">
+                <div class="w-14 h-14 bg-white rounded-full group-hover:bg-gray-200 transition-colors"></div>
+            </button>
+        </div>
     </div>
-  </div>
-</div>
 
-<!-- ══════════════════ LAYAR KAMERA ══════════════════ -->
-<div id="layar-kamera" class="layar" style="position:fixed;inset:0;z-index:40;background:#000;flex-direction:column;align-items:center;justify-content:center;padding:16px">
+    <div id="view-result" class="view-container min-h-[100dvh] flex-col items-center justify-center py-10 px-6">
+        <div id="processing-loader" class="flex flex-col items-center gap-5 my-auto">
+            <div class="loader"></div>
+            <p class="text-[11px] font-bold text-stone-400 tracking-widest uppercase">Processing Canvas</p>
+        </div>
 
-  <div style="position:absolute;top:0;left:0;right:0;padding:20px;display:flex;align-items:center;justify-content:space-between;z-index:30">
-    <button id="tombol-batal" style="background:none;border:0;color:rgba(255,255,255,.8);font:inherit;font-size:14px;font-weight:500;cursor:pointer;padding:8px 0">Batal</button>
-    <div style="padding:6px 16px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
-                color:#fff;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;backdrop-filter:blur(8px)">
-      Foto <span id="hitung-foto">1</span> / <span id="total-foto">3</span>
+        <div id="result-content" class="hidden flex-col items-center w-full max-w-[400px] my-auto">
+            <h2 class="font-serif text-3xl font-semibold mb-8 text-center">Moment Captured.</h2>
+
+            <img id="final-image" src="" class="h-[60vh] md:h-[65vh] object-contain shadow-2xl mb-10 transition-transform duration-700 ease-out translate-y-4 opacity-0" alt="Momentara Photo Strip">
+
+            <div class="flex w-full gap-3">
+                <button onclick="switchView('home')" class="w-1/3 bg-white border border-stone-200 text-primary py-4 rounded-2xl font-semibold text-sm hover:bg-stone-50 transition focus:outline-none">
+                    Home
+                </button>
+                <button onclick="downloadImage()" class="w-2/3 bg-primary text-white py-4 rounded-2xl font-semibold text-sm hover:bg-black transition shadow-lg flex justify-center items-center gap-2 focus:outline-none">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Download
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div class="kotak-video" style="width:100%;max-width:95vw;height:58vh;flex-shrink:0">
-    <video id="video" autoplay playsinline muted></video>
-    <div id="kilat"></div>
-    <div id="hitung">3</div>
-  </div>
+    <script>
+        // --- CONFIG & STATE ---
+        let selectedTheme = "aura";
+        let capturedPhotos = [];
+        let finalCanvasData = "";
+        let stream = null;
 
-  <div style="position:absolute;bottom:32px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:30">
-    <p style="color:rgba(255,255,255,.5);font-size:12px;margin:0" id="petunjuk-kamera">Tekan sekali — tiga foto akan diambil otomatis</p>
-    <div style="position:relative;display:flex;align-items:center;justify-content:center">
-      <span class="cincin" aria-hidden="true"></span>
-      <button id="shutter" class="shutter" aria-label="Ambil foto"><span></span></button>
-    </div>
-  </div>
-</div>
+        const CANVAS_W = 600, CANVAS_H = 1600, PHOTO_W = 500, PHOTO_H = 375, PADDING = 50, SPACING = 30;
 
-<!-- ══════════════════ LAYAR HASIL ══════════════════ -->
-<div id="layar-hasil" class="layar halaman" style="align-items:center;justify-content:center;padding:40px 24px">
-  <div id="proses" style="display:flex;flex-direction:column;align-items:center;gap:20px">
-    <div class="memuat"></div>
-    <p class="label">Membangun Strip</p>
-  </div>
+        const themes = {
+            aura: { bg: '#FAFAFA', border: '#E2E8F0', text: 'Aura Blanc', textColor: '#475569', font: '600 28px "Plus Jakarta Sans"', radius: 20 },
+            lumina: { bg: '#F5F3FF', border: '#C4B5FD', text: 'Lumina Pearl', textColor: '#6D28D9', font: '600 32px "Playfair Display"', radius: 25 },
+            linen: { bg: '#F5F5F4', border: '#D6D3D1', text: 'Linen Dream', textColor: '#57534E', font: '500 28px "Plus Jakarta Sans"', radius: 16 },
+            matcha: { bg: '#F0FDF4', border: '#166534', text: 'Matcha Latte', textColor: '#166534', font: '600 28px "Plus Jakarta Sans"', radius: 25 },
+            santalus: { bg: '#FFF1F6', border: '#FBCFE8', text: 'Santalus Merpati', textColor: '#9D174D', font: 'italic 30px "Playfair Display"', radius: 22 },
+            cendrawasih: { bg: '#E8FCFD', border: '#A5F3FC', text: 'Cendrawasih Vetiver', textColor: '#0E7490', font: '500 28px "Plus Jakarta Sans"', radius: 12 },
+            kasmir: { bg: '#E0F2FE', border: '#7DD3FC', text: 'Kasmir Kijang', textColor: '#0369A1', font: '600 28px "Plus Jakarta Sans"', radius: 30 },
+            noir: { bg: '#111111', border: '#D4AF37', text: 'Noir Ébène', textColor: '#D4AF37', font: 'italic 30px "Playfair Display"', radius: 0 },
+            velvet: { bg: '#FFF1F2', border: '#FFF', text: 'Velvet Rose', textColor: '#9F1239', font: 'italic 34px "Playfair Display"', radius: 10 },
+            oud: { bg: '#292524', border: '#D6D3D1', text: 'OUD WOOD', textColor: '#D6D3D1', font: '800 24px "Plus Jakarta Sans"', radius: 0 }
+        };
 
-  <div id="isi-hasil" style="display:none;flex-direction:column;align-items:center;width:100%;max-width:420px">
-    <h2 class="serif" style="font-size:1.875rem;margin:0 0 24px">Momen Tertangkap.</h2>
-    <img id="hasil" alt="Strip foto Momentara"
-         style="max-height:62vh;width:auto;max-width:100%;object-fit:contain;box-shadow:0 20px 40px -12px rgba(0,0,0,.3);margin-bottom:32px">
-
-    <div style="display:flex;gap:12px;width:100%">
-      <button id="tombol-beranda" class="tombol tombol-sekunder" style="flex:1">Beranda</button>
-      <button id="tombol-ulang"   class="tombol tombol-sekunder" style="flex:1">Ulangi</button>
-      <button id="tombol-unduh"   class="tombol tombol-utama" style="flex:2">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 12l4 4 4-4"/></svg>
-        <span>Unduh</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ══════════════════════════════════════════════════════════════
-   MOMENTARA — mesin photobooth
-   Struktur:
-     pembantu  →  BININGKAI  →  OVERLAY
-     render    →  composeStrip() → canvas
-   Pratinjau dan hasil akhir memakai KODE YANG SAMA,
-   jadi kartu tidak mungkin menampilkan sesuatu yang berbeda
-   dari hasil sebenarnya.
-   ══════════════════════════════════════════════════════════════ */
-
-/* ── Ukuran ── */
-const LEBAR = 600, TINGGI = 1600;
-const FOTO_L = 500, FOTO_T = 375;
-const MARGIN = 50, ATAS = 64, JARAK = 30;
-const JUMLAH = 3;
-const yFoto = i => ATAS + i * (FOTO_T + JARAK);
-const Y_JUDUL = ATAS + JUMLAH * FOTO_T + (JUMLAH - 1) * JARAK + 72;
-const Y_KAKI  = TINGGI - 36;
-
-/* ── Status ── */
-let bingkaiDipilih = 'aura';
-let overlayAktif = new Set();
-let fotoTerekam = [];      // elemen canvas (bukan dataURL — lebih hemat memori)
-let stream = null;
-let sesi = 0;             // membatalkan urutan pengambilan yang sedang jalan
-let kanvasHasil = null;
-let timerRekam = null;
-const overlayGambar = [];  // selalu kosong saat menggambar hasil
-
-/* ── Penyimpanan lokal (aman bila mode privat) ── */
-const simpan = {
-  ambil(k, bawaan) { try { const v = localStorage.getItem('momentara.' + k); return v === null ? bawaan : JSON.parse(v); } catch { return bawaan; } },
-  simpan(k, v) { try { localStorage.setItem('momentara.' + k, JSON.stringify(v)); } catch {} }
-};
-
-/* ══════════════════ Pembantu ══════════════════ */
-function rr(ctx, x, y, w, h, r) {
-  r = Math.max(0, Math.min(r, w / 2, h / 2));
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y,     x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x,     y + h, r);
-  ctx.arcTo(x,     y + h, x,     y,     r);
-  ctx.arcTo(x,     y,     x + w, y,     r);
-  ctx.closePath();
-}
-/* RNG berbenih — hasil acak selalu sama untuk bingkai yang sama,
-   itulah yang membuat pratinjau cocok dengan hasil. */
-function acak(benih) {
-  let h = 2166136261;
-  for (let i = 0; i < benih.length; i++) { h ^= benih.charCodeAt(i); h = Math.imul(h, 16777619); }
-  let a = h >>> 0;
-  return function () {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function gradien(ctx, x0, y0, x1, y1, stop) {
-  const g = ctx.createLinearGradient(x0, y0, x1, y1);
-  stop.forEach(([o, c]) => g.addColorStop(o, c)); return g;
-}
-function radial(ctx, x0, y0, r0, x1, y1, r1, stop) {
-  const g = ctx.createRadialGradient(x0, y0, r0, x1, y1, r1);
-  stop.forEach(([o, c]) => g.addColorStop(o, c)); return g;
-}
-function bintang(ctx, cx, cy, luar, dalam, putar, warna) {
-  ctx.save(); ctx.fillStyle = warna; ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 ? dalam : luar, a = putar + i * Math.PI / 5;
-    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-  }
-  ctx.closePath(); ctx.fill(); ctx.restore();
-}
-function bintangLatar(ctx, w, h, R, n, warna, maks) {
-  ctx.save(); ctx.fillStyle = warna;
-  for (let i = 0; i < n; i++) {
-    ctx.globalAlpha = .2 + R() * .8;
-    ctx.beginPath(); ctx.arc(R() * w, R() * h, .4 + R() * maks, 0, 6.2832); ctx.fill();
-  }
-  ctx.restore();
-}
-function hati(ctx, x, y, s, warna) {
-  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.fillStyle = warna;
-  ctx.beginPath(); ctx.moveTo(0, .35);
-  ctx.bezierCurveTo(-1.3, -.35, -.55, -1.25, 0, -.6);
-  ctx.bezierCurveTo(.55, -1.25, 1.3, -.35, 0, .35);
-  ctx.closePath(); ctx.fill(); ctx.restore();
-}
-function daun(ctx, x, y, panjang, lebar, sudut, warna) {
-  ctx.save(); ctx.translate(x, y); ctx.rotate(sudut); ctx.fillStyle = warna;
-  ctx.beginPath(); ctx.moveTo(0, 0);
-  ctx.bezierCurveTo(panjang * .25, -lebar, panjang * .75, -lebar, panjang, 0);
-  ctx.bezierCurveTo(panjang * .75, lebar, panjang * .25, lebar, 0, 0);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth = 1.4;
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(panjang, 0); ctx.stroke();
-  ctx.restore();
-}
-function pelangi(ctx, x, y, panjang, sudut, warna) {
-  ctx.save(); ctx.translate(x, y); ctx.rotate(sudut); ctx.fillStyle = warna;
-  ctx.beginPath(); ctx.moveTo(0, 0);
-  for (let i = 0; i <= 18; i++) { const t = i / 18; ctx.lineTo(Math.sin(t * Math.PI) * panjang * .26, -t * panjang); }
-  for (let i = 18; i >= 0; i--) { const t = i / 18; ctx.lineTo(-Math.sin(t * Math.PI) * panjang * .26, -t * panjang); }
-  ctx.closePath(); ctx.fill(); ctx.restore();
-}
-function ledakan(ctx, cx, cy, rLuar, rDalam, n, warna, putar) {
-  ctx.save(); ctx.fillStyle = warna; ctx.beginPath();
-  for (let i = 0; i < n * 2; i++) {
-    const a = (putar || 0) + i * Math.PI / n, r = i % 2 ? rDalam : rLuar;
-    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-  }
-  ctx.closePath(); ctx.fill(); ctx.restore();
-}
-
-/* Font yang dipakai */
-const SANS  = '"Plus Jakarta Sans", sans-serif';
-const SERIF = '"Playfair Display", serif';
-const FUN   = '"Fredoka", cursive';
-const MONO  = '"Space Mono", monospace';
-const TULIS = '"Caveat", cursive';
-
-/* ══════════════════════════════════════════════════════════════
-   DAFTAR BININGKAI
-   Setiap bingkai menentukan:
-     nama    teks yang tampil
-     grup    kelompok di galeri
-     bg()    menggambar latar 600×1600
-     foto    resep bingkai foto: { alas, ruang, radius, garis, bayang }
-     atas()  opsional — digambar DI ATAS foto
-     judul   { teks, font, warna }
-   ══════════════════════════════════════════════════════════════ */
-const BININGKAI = {
-
-  /* ───────── Elegan ───────── */
-  aura: {
-    nama: 'Aura Putih', grup: 'Elegan', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 20, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = '#FAFAFA'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#F1F5F9'; ctx.lineWidth = 1;
-      for (let x = 0; x <= LEBAR; x += 40) { ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, TINGGI); ctx.stroke(); }
-      for (let y = 0; y <= TINGGI; y += 40) { ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(LEBAR, y + .5); ctx.stroke(); }
-    },
-    judul: { teks: 'Aura Putih', font: `600 30px ${SANS}`, warna: '#475569' }
-  },
-  lumina: {
-    nama: 'Mutiara Lumina', grup: 'Elegan', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 26, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, LEBAR, TINGGI, [[0, '#F5F3FF'], [.5, '#E0E7FF'], [1, '#FAE8FF']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('lumina');
-      for (let i = 0; i < 26; i++) bintang(ctx, R() * LEBAR, R() * TINGGI, 3 + R() * 9, 2.5, R() * 6.28, 'rgba(255,255,255,.8)');
-    },
-    judul: { teks: 'Mutiara Lumina', font: `600 34px ${SERIF}`, warna: '#6D28D9' }
-  },
-  linen: {
-    nama: 'Impian Linen', grup: 'Elegan', gelap: false,
-    foto: { radius: 16, garis: { warna: '#D6D3D1', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = '#F5F5F4'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#E7E5E4'; ctx.lineWidth = 2; ctx.strokeRect(26, 26, LEBAR - 52, TINGGI - 52);
-      ctx.strokeStyle = '#D6D3D1'; ctx.lineWidth = 1; ctx.strokeRect(36, 36, LEBAR - 72, TINGGI - 72);
-    },
-    judul: { teks: 'Impian Linen', font: `400 34px ${SERIF}`, warna: '#57534E' }
-  },
-  santalus: {
-    nama: 'Santalus Merpati', grup: 'Elegan', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 22, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = '#FFF1F6'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = 'rgba(251,207,232,.75)'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(150, 130, 190, 0, Math.PI); ctx.stroke();
-      ctx.beginPath(); ctx.arc(LEBAR - 130, TINGGI - 140, 230, Math.PI, 0); ctx.stroke();
-      hati(ctx, 96, TINGGI - 210, 34, 'rgba(251,207,232,.9)');
-      hati(ctx, LEBAR - 96, 200, 26, 'rgba(251,207,232,.8)');
-    },
-    judul: { teks: 'Santalus Merpati', font: `italic 32px ${SERIF}`, warna: '#9D174D' }
-  },
-  velvet: {
-    nama: 'Mawar Velvet', grup: 'Elegan', gelap: false,
-    foto: { radius: 10, garis: { warna: '#FFFFFF', lebar: 10 } },
-    bg(ctx) {
-      ctx.fillStyle = '#FFF1F2'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = radial(ctx, LEBAR / 2, TINGGI, 60, LEBAR / 2, TINGGI, 720, [[0, '#FFE4E6'], [1, 'rgba(255,241,242,0)']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('velvet');
-      for (let i = 0; i < 20; i++) hati(ctx, R() * LEBAR, R() * TINGGI, 8 + R() * 16, 'rgba(190,24,93,.1)');
-    },
-    judul: { teks: 'Mawar Velvet', font: `italic 40px ${SERIF}`, warna: '#9F1239' }
-  },
-  noir: {
-    nama: 'Hitam Kelam', grup: 'Elegan', gelap: true,
-    foto: { radius: 0, garis: { warna: '#D4AF37', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = '#0B0B0B'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = radial(ctx, LEBAR / 2, TINGGI * .3, 40, LEBAR / 2, TINGGI * .3, 700, [[0, 'rgba(212,175,55,.13)'], [1, 'rgba(212,175,55,0)']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#D4AF37'; ctx.lineWidth = 3; ctx.strokeRect(16, 16, LEBAR - 32, TINGGI - 32);
-      ctx.lineWidth = 1; ctx.strokeRect(25, 25, LEBAR - 50, TINGGI - 50);
-    },
-    judul: { teks: 'Hitam Kelam', font: `italic 32px ${SERIF}`, warna: '#D4AF37' }
-  },
-  oud: {
-    nama: 'Kayu Oud', grup: 'Elegan', gelap: true,
-    foto: { radius: 0, garis: { warna: '#D6D3D1', lebar: 2 }, bayang: { x: 7, y: 7, blur: 0, warna: 'rgba(0,0,0,.55)' } },
-    bg(ctx) {
-      ctx.fillStyle = '#292524'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#1C1917'; ctx.lineWidth = 5; ctx.strokeRect(18, 18, LEBAR - 36, TINGGI - 36);
-    },
-    judul: { teks: 'OUD WOOD', font: `800 26px ${SANS}`, warna: '#D6D3D1' }
-  },
-
-  /* ───────── Segar ───────── */
-  matcha: {
-    nama: 'Matcha Latte', grup: 'Segar', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 26, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = '#F0FDF4'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = '#DCFCE7'; ctx.beginPath(); ctx.arc(-20, 170, 200, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = '#BBF7D0'; ctx.beginPath(); ctx.arc(LEBAR + 20, TINGGI - 260, 240, 0, 6.2832); ctx.fill();
-      const R = acak('matcha');
-      for (let i = 0; i < 14; i++) daun(ctx, R() * LEBAR, R() * TINGGI, 40 + R() * 50, 16, R() * 6.28, 'rgba(21,128,61,.12)');
-    },
-    judul: { teks: 'Matcha Latte', font: `600 30px ${SANS}`, warna: '#166534' }
-  },
-  cendrawasih: {
-    nama: 'Cendrawasih Vetiver', grup: 'Segar', gelap: false,
-    foto: { radius: 12, garis: { warna: '#A5F3FC', lebar: 4 } },
-    bg(ctx) {
-      ctx.fillStyle = '#E8FCFD'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = 'rgba(165,243,252,.55)'; ctx.lineWidth = 1;
-      for (let x = 24; x < LEBAR; x += 42) { ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, TINGGI); ctx.stroke(); }
-      ctx.strokeStyle = '#22D3EE'; ctx.lineWidth = 5; ctx.lineCap = 'round';
-      [[70, 90, 30], [LEBAR - 70, 210, 22], [70, TINGGI - 300, 26], [LEBAR - 70, TINGGI - 120, 18]].forEach(([x, y, l]) => {
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + l, y); ctx.stroke();
-      });
-    },
-    judul: { teks: 'Cendrawasih Vetiver', font: `500 28px ${SANS}`, warna: '#0E7490' }
-  },
-  kasmir: {
-    nama: 'Kasmir Kijang', grup: 'Segar', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 30, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = '#E0F2FE'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = 'rgba(186,230,253,.7)';
-      ctx.beginPath(); ctx.arc(LEBAR + 30, 60, 220, 0, 6.2832); ctx.fill();
-      ctx.beginPath(); ctx.arc(-30, TINGGI - 120, 200, 0, 6.2832); ctx.fill();
-    },
-    judul: { teks: 'Kasmir Kijang', font: `600 30px ${SANS}`, warna: '#0369A1' }
-  },
-  tropical: {
-    nama: 'Palem Tropis', grup: 'Segar', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 18, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, 0, TINGGI, [[0, '#CCFBF1'], [.55, '#99F6E4'], [1, '#5EEAD4']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = 'rgba(255,255,255,.75)';
-      ctx.beginPath(); ctx.arc(140, 210, 58, 0, 6.2832); ctx.fill();
-      ctx.beginPath(); ctx.arc(190, 200, 70, 0, 6.2832); ctx.fill();
-      ctx.beginPath(); ctx.arc(255, 225, 46, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = 'rgba(15,118,110,.55)';
-      pelangi(ctx, -10, TINGGI, 300, -.32, ctx.fillStyle);
-      pelangi(ctx, LEBAR + 10, TINGGI, 260, .3, ctx.fillStyle);
-      pelangi(ctx, 0, 120, 190, -.5, ctx.fillStyle);
-    },
-    judul: { teks: 'Palem Tropis', font: `700 32px ${FUN}`, warna: '#0F766E' }
-  },
-  jungle: {
-    nama: 'Hutan Belantara', grup: 'Segar', gelap: false,
-    foto: { radius: 22, garis: { warna: 'rgba(255,255,255,.35)', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, 0, TINGGI, [[0, '#052E16'], [.5, '#14532D'], [1, '#166534']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('jungle');
-      for (let i = 0; i < 22; i++) daun(ctx, R() * LEBAR, R() * TINGGI, 70 + R() * 130, 30, R() * 6.28, `rgba(187,247,208,${(.07 + R() * .13).toFixed(3)})`);
-    },
-    judul: { teks: 'Hutan Belantara', font: `700 34px ${FUN}`, warna: '#BBF7D0' }
-  },
-  sunset: {
-    nama: 'Jam Emas', grup: 'Segar', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 16, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, 0, TINGGI, [[0, '#FFEDD5'], [.4, '#FDBA74'], [.75, '#F97316'], [1, '#7C2D12']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = 'rgba(255,251,235,.9)'; ctx.beginPath(); ctx.arc(300, 300, 110, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = 'rgba(255,237,213,.5)'; ctx.beginPath(); ctx.arc(300, 300, 165, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = 'rgba(120,53,15,.45)';
-      ctx.beginPath(); ctx.moveTo(0, TINGGI);
-      for (let x = 0; x <= LEBAR; x += 50) ctx.lineTo(x, 1150 + Math.sin(x / 90) * 46);
-      ctx.lineTo(LEBAR, TINGGI); ctx.closePath(); ctx.fill();
-    },
-    judul: { teks: 'Jam Emas', font: `italic 36px ${SERIF}`, warna: '#7C2D12' }
-  },
-
-  /* ───────── Kosmik ───────── */
-  starswars: {
-    nama: 'Stars Wars', grup: 'Kosmik', gelap: true,
-    foto: { radius: 8, garis: { warna: 'rgba(125,211,252,.75)', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, LEBAR, TINGGI, [[0, '#01030F'], [.5, '#0B1220'], [1, '#000000']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('starswars');
-      bintangLatar(ctx, LEBAR, TINGGI, R, 260, '#E2E8F0', 1.7);
-      // planet bercincin
-      ctx.fillStyle = radial(ctx, 440, 200, 6, 440, 200, 130, [[0, '#93C5FD'], [.45, '#1D4ED8'], [1, 'rgba(2,6,23,0)']]);
-      ctx.beginPath(); ctx.arc(440, 200, 130, 0, 6.2832); ctx.fill();
-      ctx.strokeStyle = 'rgba(147,197,253,.55)'; ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.ellipse(440, 210, 190, 34, -.36, 0, 6.2832); ctx.stroke();
-      // garis kecepatan
-      ctx.strokeStyle = 'rgba(186,230,253,.28)'; ctx.lineWidth = 1.3;
-      for (let i = 0; i < 90; i++) {
-        const a = R() * 6.2832, r0 = 120 + R() * 200, r1 = r0 + 90 + R() * 320;
-        ctx.beginPath();
-        ctx.moveTo(300 + Math.cos(a) * r0, 620 + Math.sin(a) * r0);
-        ctx.lineTo(300 + Math.cos(a) * r1, 620 + Math.sin(a) * r1);
-        ctx.stroke();
-      }
-      // sudut HUD
-      ctx.strokeStyle = 'rgba(125,211,252,.65)'; ctx.lineWidth = 3;
-      [[20, 20, 1, 1], [LEBAR - 20, 20, -1, 1], [20, TINGGI - 20, 1, -1], [LEBAR - 20, TINGGI - 20, -1, -1]].forEach(([x, y, sx, sy]) => {
-        ctx.beginPath(); ctx.moveTo(x + sx * 44, y); ctx.lineTo(x, y); ctx.lineTo(x, y + sy * 44); ctx.stroke();
-      });
-    },
-    atas(ctx) {
-      // crosshair di atas foto tengah
-      ctx.save();
-      ctx.strokeStyle = 'rgba(248,113,113,.85)'; ctx.lineWidth = 2;
-      const cx = MARGIN + FOTO_L / 2, cy = yFoto(1) + FOTO_T / 2;
-      ctx.beginPath(); ctx.arc(cx, cy, 62, 0, 6.2832); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx - 92, cy); ctx.lineTo(cx - 40, cy);
-      ctx.moveTo(cx + 40, cy); ctx.lineTo(cx + 92, cy);
-      ctx.moveTo(cx, cy - 92); ctx.lineTo(cx, cy - 40);
-      ctx.moveTo(cx, cy + 40); ctx.lineTo(cx, cy + 92);
-      ctx.stroke();
-      ctx.restore();
-    },
-    judul: { teks: 'STARS WARS', font: `700 32px ${MONO}`, warna: '#7DD3FC' }
-  },
-  galaxy: {
-    nama: 'Nebula Mengalir', grup: 'Kosmik', gelap: true,
-    foto: { alas: '#FFFFFF', radius: 24, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = '#05041A'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('galaxy');
-      const w = ['rgba(167,139,250,.34)', 'rgba(56,189,248,.26)', 'rgba(244,114,182,.24)'];
-      for (let i = 0; i < 16; i++) { ctx.fillStyle = w[i % 3]; ctx.beginPath(); ctx.arc(R() * LEBAR, R() * TINGGI, 90 + R() * 230, 0, 6.2832); ctx.fill(); }
-      bintangLatar(ctx, LEBAR, TINGGI, R, 300, '#FFFFFF', 1.5);
-    },
-    judul: { teks: 'Nebula Mengalir', font: `400 36px ${SERIF}`, warna: '#DDD6FE' }
-  },
-  cyberpunk: {
-    nama: 'Grid Neon', grup: 'Kosmik', gelap: true,
-    foto: { radius: 0, garis: { warna: '#22D3EE', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = '#04060F'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = gradien(ctx, 0, 500, 0, 900, [[0, 'rgba(244,63,94,0)'], [.5, 'rgba(244,63,94,.35)'], [1, 'rgba(56,189,248,.15)']]);
-      ctx.fillRect(0, 400, LEBAR, 500);
-      ctx.strokeStyle = 'rgba(34,211,238,.5)'; ctx.lineWidth = 1.5;
-      for (let i = -12; i <= 12; i++) { ctx.beginPath(); ctx.moveTo(300 + i * 18, 820); ctx.lineTo(300 + i * 260, TINGGI); ctx.stroke(); }
-      let y = 820, langkah = 6;
-      while (y < TINGGI) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(LEBAR, y); ctx.stroke(); langkah *= 1.32; y += langkah; }
-      const R = acak('cyberpunk');
-      for (let i = 0; i < 12; i++) {
-        ctx.fillStyle = i % 2 ? 'rgba(244,114,182,.35)' : 'rgba(34,211,238,.3)';
-        ctx.fillRect(0, R() * TINGGI, LEBAR, 2 + R() * 9);
-      }
-    },
-    judul: { teks: 'NEON GRID', font: `700 34px ${MONO}`, warna: '#22D3EE' }
-  },
-  vaporwave: {
-    nama: 'Matahari Vapor', grup: 'Kosmik', gelap: true,
-    foto: { radius: 12, garis: { warna: '#FDE68A', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, 0, TINGGI, [[0, '#2E1065'], [.45, '#7C3AED'], [.72, '#F472B6'], [1, '#1E1B4B']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.save();
-      ctx.beginPath(); ctx.arc(300, 380, 150, 0, 6.2832); ctx.clip();
-      ctx.fillStyle = gradien(ctx, 0, 230, 0, 530, [[0, '#FDE68A'], [1, '#FB7185']]);
-      ctx.fillRect(140, 220, 320, 320);
-      ctx.fillStyle = '#2E1065';
-      for (let i = 0; i < 9; i++) ctx.fillRect(140, 300 + i * 26, 320, 4 + i * 2.4);
-      ctx.restore();
-      ctx.strokeStyle = 'rgba(253,230,138,.6)'; ctx.lineWidth = 1.6;
-      for (let i = -10; i <= 10; i++) { ctx.beginPath(); ctx.moveTo(300 + i * 16, 760); ctx.lineTo(300 + i * 300, TINGGI); ctx.stroke(); }
-      let y = 760, langkah = 8;
-      while (y < TINGGI) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(LEBAR, y); ctx.stroke(); langkah *= 1.35; y += langkah; }
-    },
-    judul: { teks: 'VAPOR SUN', font: `700 36px ${FUN}`, warna: '#FDE68A' }
-  },
-  matrix: {
-    nama: 'Hujan Hijau', grup: 'Kosmik', gelap: true,
-    foto: { radius: 0, garis: { warna: '#14532D', lebar: 4 } },
-    bg(ctx) {
-      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('matrix');
-      ctx.font = `700 22px ${MONO}`;
-      for (let kolom = 0; kolom < 14; kolom++) {
-        const x = 12 + kolom * 42;
-        for (let i = 0; i < 26; i++) {
-          const y = i * 62 + R() * 30;
-          if (y > TINGGI) break;
-          const g = .25 + R() * .6;
-          ctx.fillStyle = `rgba(34,197,94,${(g * .55).toFixed(3)})`;
-          ctx.fillRect(x, y, 30, 52);
-          ctx.fillStyle = `rgba(163,230,53,${g.toFixed(3)})`;
-          ctx.fillText('01', x + 3, y + 30);
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.innerHTML = isError ? `<span class="text-red-400">⚠️</span> ${msg}` : `<span class="text-emerald-400">✨</span> ${msg}`;
+            t.classList.remove('-translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                t.classList.remove('translate-y-0', 'opacity-100');
+                t.classList.add('-translate-y-24', 'opacity-0');
+            }, 3500);
         }
-      }
-      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-    },
-    judul: { teks: 'HUJAN HIJAU', font: `700 34px ${MONO}`, warna: '#22C55E' }
-  },
-  arcade: {
-    nama: 'Pixel Quest', grup: 'Kosmik', gelap: true,
-    foto: { radius: 0, garis: { warna: '#FDE047', lebar: 6 } },
-    bg(ctx) {
-      ctx.fillStyle = '#1E1B4B'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('arcade');
-      const palet = ['#FDE047', '#F472B6', '#22D3EE', '#A3E635', '#FB923C'];
-      for (let i = 0; i < 90; i++) {
-        ctx.fillStyle = palet[Math.floor(R() * palet.length)];
-        ctx.globalAlpha = .18 + R() * .4;
-        ctx.fillRect(Math.floor(R() * 15) * 40, Math.floor(R() * 40) * 40, 40, 40);
-      }
-      ctx.globalAlpha = 1;
-      for (let i = 0; i < 15; i++) { ctx.fillStyle = i % 2 ? '#15803D' : '#166534'; ctx.fillRect(i * 40, TINGGI - 160, 40, 160); }
-    },
-    judul: { teks: 'PIXEL QUEST', font: `700 34px ${MONO}`, warna: '#FDE047' }
-  },
 
-  /* ───────── Lucu ───────── */
-  toystory: {
-    nama: 'Toy Pop', grup: 'Lucu', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 10, garis: { warna: '#1E293B', lebar: 4 } },
-    bg(ctx) {
-      ctx.fillStyle = '#FEF3C7'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      [[40, 70, 84, '#EF4444'], [LEBAR - 124, 130, 84, '#3B82F6'], [40, TINGGI - 220, 84, '#22C55E'], [LEBAR - 124, TINGGI - 260, 84, '#F59E0B']]
-        .forEach(([x, y, s, c]) => {
-          ctx.save(); ctx.translate(x + s / 2, y + s / 2); ctx.rotate(.12);
-          ctx.fillStyle = c; rr(ctx, -s / 2, -s / 2, s, s, 10); ctx.fill();
-          ctx.fillStyle = 'rgba(255,255,255,.45)'; rr(ctx, -s / 2 + 10, -s / 2 + 10, s - 20, 16, 6); ctx.fill();
-          ctx.restore();
-        });
-      bintang(ctx, LEBAR - 120, 420, 90, 36, -.2, '#F59E0B');
-      const R = acak('toy');
-      const palet = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B', '#EC4899'];
-      for (let i = 0; i < 70; i++) {
-        ctx.save(); ctx.globalAlpha = .5 + R() * .5;
-        ctx.translate(R() * LEBAR, R() * TINGGI); ctx.rotate(R() * 6.28);
-        ctx.fillStyle = palet[i % 5]; ctx.fillRect(-7, -3, 14, 6);
-        ctx.restore();
-      }
-    },
-    judul: { teks: 'TOY POP', font: `700 44px ${FUN}`, warna: '#DC2626' }
-  },
-  comicpop: {
-    nama: 'Komik Pop', grup: 'Lucu', gelap: false,
-    foto: { radius: 6, garis: { warna: '#0F172A', lebar: 6 } },
-    bg(ctx) {
-      ctx.fillStyle = '#FDE68A'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ledakan(ctx, 500, 300, 210, 130, 14, '#F472B6', .1);
-      ledakan(ctx, 70, TINGGI - 260, 190, 120, 14, '#38BDF8', .2);
-      ctx.fillStyle = '#FBBF24'; ctx.globalAlpha = .16;
-      for (let y = 0; y < TINGGI; y += 16) for (let x = 0; x < LEBAR; x += 16) { ctx.beginPath(); ctx.arc(x + 8, y + 8, 2.6, 0, 6.2832); ctx.fill(); }
-      ctx.globalAlpha = 1;
-      const R = acak('comic');
-      for (let i = 0; i < 5; i++) bintang(ctx, R() * LEBAR, R() * TINGGI, 22, 9, R() * 6.28, '#EF4444');
-    },
-    judul: { teks: 'BRAK!', font: `700 62px ${FUN}`, warna: '#0F172A' }
-  },
-  kawaii: {
-    nama: 'Awan Kawaii', grup: 'Lucu', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 32, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, LEBAR, TINGGI, [[0, '#FCE7F3'], [.5, '#EDE9FE'], [1, '#CFFAFE']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('kawaii');
-      [[90, 150, 54], [220, 130, 70], [470, 180, 46], [140, TINGGI - 260, 60], [430, TINGGI - 190, 50]].forEach(([x, y, s]) => {
-        ctx.fillStyle = 'rgba(255,255,255,.92)';
-        ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + s * .9, y + s * .15, s * .72, 0, 6.2832); ctx.fill();
-        ctx.beginPath(); ctx.arc(x - s * .85, y + s * .2, s * .6, 0, 6.2832); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(x, y + s * .55, s * 1.6, s * .55, 0, 0, 6.2832); ctx.fill();
-      });
-      for (let i = 0; i < 18; i++) bintang(ctx, R() * LEBAR, R() * TINGGI, 9 + R() * 12, 4, R() * 6.28, 'rgba(236,72,153,.5)');
-    },
-    judul: { teks: 'Awan Kawaii', font: `600 36px ${FUN}`, warna: '#DB2777' }
-  },
-  sticker: {
-    nama: 'Lembar Stiker', grup: 'Lucu', gelap: false,
-    foto: { radius: 18, garis: { warna: '#FFFFFF', lebar: 5 }, bayang: { x: 0, y: 4, blur: 10, warna: 'rgba(0,0,0,.18)' } },
-    bg(ctx) {
-      ctx.fillStyle = '#F5F3FF'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#C4B5FD'; ctx.lineWidth = 2; ctx.setLineDash([9, 9]);
-      rr(ctx, 22, 22, LEBAR - 44, TINGGI - 44, 26); ctx.stroke(); ctx.setLineDash([]);
-      const R = acak('sticker');
-      const palet = ['#FBBF24', '#34D399', '#F472B6', '#60A5FA', '#A78BFA'];
-      for (let i = 0; i < 16; i++) {
-        ctx.save();
-        ctx.translate(50 + R() * (LEBAR - 100), 60 + R() * (TINGGI - 120));
-        ctx.rotate((R() - .5) * .8);
-        bintang(ctx, 0, 0, 18 + R() * 14, 8, R() * 6.28, palet[i % 5]);
-        ctx.restore();
-      }
-    },
-    judul: { teks: 'STICKER SHEET', font: `700 30px ${FUN}`, warna: '#7C3AED' }
-  },
-  doodle: {
-    nama: 'Doodle Pop', grup: 'Lucu', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 14, garis: { warna: '#0F172A', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = '#ECFEFF'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#164E63'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      const R = acak('doodle');
-      for (let i = 0; i < 26; i++) {
-        const x = R() * LEBAR, y = R() * TINGGI, s = 24 + R() * 30;
-        ctx.beginPath();
-        if (i % 3 === 0) {
-          ctx.moveTo(x - s, y);
-          for (let k = 1; k <= 4; k++) ctx.quadraticCurveTo(x - s + k * s / 2, y + (k % 2 ? s : -s), x - s + k * s / 2, y);
-        } else if (i % 3 === 1) {
-          for (let k = 0; k < 40; k++) { const a = k * .3, r = k * s / 40; k ? ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : ctx.moveTo(x, y); }
-        } else {
-          for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; ctx.moveTo(x - Math.cos(a) * s, y - Math.sin(a) * s); ctx.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s); }
+        function switchView(viewId) {
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            window.scrollTo(0, 0);
         }
-        ctx.stroke();
-      }
-    },
-    judul: { teks: 'Doodle Pop', font: `600 32px ${TULIS}`, warna: '#0E7490' }
-  },
 
-  /* ───────── Romans ───────── */
-  romance: {
-    nama: 'Surat Cinta', grup: 'Romans', gelap: false,
-    foto: { alas: '#FFF7ED', radius: 6, garis: { warna: '#FBCFE8', lebar: 3 }, bayang: { x: 0, y: 6, blur: 14, warna: 'rgba(190,18,60,.16)' } },
-    bg(ctx) {
-      ctx.fillStyle = '#FFF1F2'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = 'rgba(244,114,182,.6)'; ctx.lineWidth = 2;
-      rr(ctx, 28, 28, LEBAR - 56, TINGGI - 56, 10); ctx.stroke();
-      const R = acak('romance');
-      for (let i = 0; i < 22; i++) hati(ctx, R() * LEBAR, R() * TINGGI, 9 + R() * 16, 'rgba(244,114,182,.35)');
-    },
-    judul: { teks: 'Selalu milikmu', font: `700 42px ${TULIS}`, warna: '#BE123C' }
-  },
-  sweetheart: {
-    nama: 'Manisku', grup: 'Romans', gelap: false,
-    foto: { radius: 20, garis: { warna: '#FFFFFF', lebar: 6 } },
-    bg(ctx) {
-      ctx.fillStyle = '#FCE7F3'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#F9A8D4'; ctx.lineWidth = 3;
-      for (let i = 0; i < 20; i++) {
-        ctx.beginPath(); ctx.arc(i * 30 + 15, 40, 15, Math.PI, 0, false); ctx.stroke();
-        ctx.beginPath(); ctx.arc(i * 30 + 15, TINGGI - 40, 15, 0, Math.PI, false); ctx.stroke();
-      }
-      ctx.strokeRect(24, 24, LEBAR - 48, TINGGI - 48);
-      const R = acak('sweet');
-      for (let i = 0; i < 14; i++) hati(ctx, 50 + R() * (LEBAR - 100), 80 + R() * (TINGGI - 160), 12 + R() * 20, 'rgba(219,39,119,.4)');
-    },
-    judul: { teks: 'Milikku?', font: `italic 38px ${SERIF}`, warna: '#DB2777' }
-  },
-  forever: {
-    nama: 'Eternal Vow', grup: 'Romans', gelap: true,
-    foto: { radius: 0, garis: { warna: '#D4AF37', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, LEBAR, TINGGI, [[0, '#4C0519'], [.5, '#881337'], [1, '#3F0413']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = radial(ctx, LEBAR / 2, TINGGI * .35, 30, LEBAR / 2, TINGGI * .35, 620, [[0, 'rgba(212,175,55,.22)'], [1, 'rgba(212,175,55,0)']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = '#D4AF37'; ctx.lineWidth = 1.5; rr(ctx, 22, 22, LEBAR - 44, TINGGI - 44, 8); ctx.stroke();
-      const R = acak('forever');
-      for (let i = 0; i < 16; i++) hati(ctx, R() * LEBAR, R() * TINGGI, 8 + R() * 14, 'rgba(212,175,55,.35)');
-    },
-    judul: { teks: 'SUMPAH ABADI', font: `400 32px ${SERIF}`, warna: '#D4AF37' }
-  },
-
-  /* ───────── Budaya ───────── */
-  batik: {
-    nama: 'Batik Parang', grup: 'Budaya', gelap: true,
-    foto: { radius: 8, garis: { warna: '#F5F3FF', lebar: 4 } },
-    bg(ctx) {
-      ctx.fillStyle = '#1E1B4B'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.lineCap = 'round';
-      const pola = (ofs, lebar, warna) => {
-        ctx.strokeStyle = warna; ctx.lineWidth = lebar;
-        ctx.beginPath();
-        for (let t = 0; t <= 1; t += .02) {
-          const y = t * TINGGI, x = ofs + Math.sin(t * Math.PI * 6) * 30;
-          t ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        function selectTheme(themeId) {
+            selectedTheme = themeId;
+            document.querySelectorAll('.theme-card').forEach(card => card.classList.remove('selected'));
+            document.getElementById(`theme-${themeId}`).classList.add('selected');
         }
-        ctx.stroke();
-      };
-      for (let ofs = -TINGGI; ofs < LEBAR + TINGGI; ofs += 96) pola(ofs, 7, '#FBBF24');
-      for (let ofs = -TINGGI; ofs < LEBAR + TINGGI; ofs += 96) pola(ofs + 48, 3, 'rgba(251,191,36,.4)');
-    },
-    judul: { teks: 'BATIK PARANG', font: `700 30px ${SANS}`, warna: '#FDE68A' }
-  },
-  kawung: {
-    nama: 'Tanah Kawung', grup: 'Budaya', gelap: false,
-    foto: { alas: '#FEF3C7', radius: 12, garis: { warna: '#9A3412', lebar: 4 } },
-    bg(ctx) {
-      ctx.fillStyle = '#9A3412'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = '#FEF3C7';
-      for (let gy = 0; gy < 2; gy++) for (let gx = 0; gx < 2; gx++) {
-        const ox = gx * 300 - 50, oy = gy * 400;
-        for (let y = 0; y < 400; y += 40) for (let x = 0; x < 300; x += 40) {
-          ctx.beginPath(); ctx.ellipse(ox + x, oy + y, 9, 15, 0, 0, 6.2832); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(ox + x + 20, oy + y + 20, 9, 15, 0, 0, 6.2832); ctx.fill();
+
+        async function startPhotobooth() {
+            capturedPhotos = [];
+            const video = document.getElementById('video-element');
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Camera API not supported.");
+                }
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+                switchView('camera');
+                document.getElementById('btn-capture').classList.remove('hidden');
+                document.getElementById('session-counter').innerText = `Sesi 1 / 3`;
+                document.getElementById('timer-display').style.opacity = '0';
+                video.srcObject = stream;
+            } catch (err) {
+                showToast("Camera access denied. Please allow permissions in browser.", true);
+            }
         }
-      }
-    },
-    judul: { teks: 'KAWUNG LAND', font: `700 30px ${SANS}`, warna: '#9A3412' }
-  },
-  wayang: {
-    nama: 'Kulit Wayang', grup: 'Budaya', gelap: true,
-    foto: { radius: 0, garis: { warna: '#F59E0B', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = '#1C1917'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ledakan(ctx, 300, 180, 130, 74, 22, 'rgba(245,158,11,.3)', 0);
-      ctx.fillStyle = '#F59E0B'; ctx.strokeStyle = '#1C1917'; ctx.lineWidth = 3;
-      [200, TINGGI - 200].forEach(cy => {
-        ctx.beginPath();
-        ctx.moveTo(300, cy - 120);
-        ctx.quadraticCurveTo(430, cy - 40, 400, cy + 60);
-        ctx.quadraticCurveTo(390, cy + 110, 300, cy + 118);
-        ctx.quadraticCurveTo(210, cy + 110, 200, cy + 60);
-        ctx.quadraticCurveTo(170, cy - 40, 300, cy - 120);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-      });
-      const R = acak('wayang');
-      ctx.fillStyle = 'rgba(245,158,11,.5)';
-      for (let i = 0; i < 120; i++) { ctx.beginPath(); ctx.arc(80 + R() * 440, 400 + R() * 800, 2.5, 0, 6.2832); ctx.fill(); }
-    },
-    judul: { teks: 'WAYANG SKIN', font: `700 30px ${SANS}`, warna: '#FBBF24' }
-  },
 
-  /* ───────── Vintage ───────── */
-  polaroid: {
-    nama: 'Polaroid', grup: 'Klasik', gelap: false,
-    foto: { alas: '#FFFFFF', ruang: { x: 24, y: 22, b: 92 }, radius: 2, bayang: { x: 0, y: 8, blur: 18, warna: 'rgba(0,0,0,.22)' } },
-    bg(ctx) {
-      ctx.fillStyle = '#F5F5F4'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.fillStyle = radial(ctx, LEBAR / 2, TINGGI / 2, 100, LEBAR / 2, TINGGI / 2, 900, [[0, 'rgba(255,255,255,.7)'], [1, 'rgba(255,255,255,0)']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-    },
-    atas(ctx) {
-      ctx.save();
-      ctx.fillStyle = '#3F3F46'; ctx.textAlign = 'center';
-      ctx.font = `700 26px ${TULIS}`;
-      ctx.fillText('hari yang baik', LEBAR / 2, Y_JUDUL - 88);
-      ctx.restore();
-    },
-    judul: { teks: 'Polaroid', font: `700 32px ${TULIS}`, warna: '#57534E' }
-  },
-  kraft: {
-    nama: 'Kertas Kraft', grup: 'Klasik', gelap: false,
-    foto: { radius: 4, garis: { warna: 'rgba(120,80,40,.5)', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = '#D6C29A'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('kraft');
-      ctx.fillStyle = 'rgba(140,100,55,.1)';
-      for (let i = 0; i < 900; i++) ctx.fillRect(R() * LEBAR, R() * TINGGI, 2 + R() * 3, 1.4);
-      ctx.strokeStyle = 'rgba(90,60,30,.45)'; ctx.lineWidth = 3; ctx.setLineDash([12, 9]);
-      rr(ctx, 24, 24, LEBAR - 48, TINGGI - 48, 6); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(255,250,235,.6)';
-      [[70, 20, -.5], [LEBAR - 70, 20, .5], [70, TINGGI - 20, .5], [LEBAR - 70, TINGGI - 20, -.5]].forEach(([x, y, a]) => {
-        ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.fillRect(-52, -15, 104, 30); ctx.restore();
-      });
-    },
-    judul: { teks: 'di atas film', font: `700 34px ${TULIS}`, warna: '#78350F' }
-  },
-  newsprint: {
-    nama: 'Korac', grup: 'Klasik', gelap: false,
-    foto: { radius: 0, garis: { warna: '#1C1917', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = '#F5F1E6'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('news');
-      ctx.fillStyle = 'rgba(184,168,138,.35)';
-      for (let i = 0; i < 1500; i++) ctx.fillRect(R() * LEBAR, R() * TINGGI, 2, 2);
-      ctx.strokeStyle = '#1C1917'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(30, 46); ctx.lineTo(LEBAR - 30, 46); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(30, 84); ctx.lineTo(LEBAR - 30, 84); ctx.stroke();
-      ctx.fillStyle = 'rgba(28,25,23,.22)';
-      [36, 222, 370, 520].forEach(x => { for (let y = 104; y < TINGGI - 60; y += 12) ctx.fillRect(x, y, 118, 4); });
-      ctx.fillStyle = '#1C1917';
-      ctx.fillRect(36, 58, 150, 14); ctx.fillRect(LEBAR - 130, 58, 94, 14);
-    },
-    judul: { teks: 'HARIAN MOMEN', font: `700 30px ${SERIF}`, warna: '#1C1917' }
-  },
+        function stopCamera() {
+            if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+        }
 
-  /* ───────── Minimal ───────── */
-  blueprint: {
-    nama: 'Cetak Biru', grup: 'Minimal', gelap: true,
-    foto: { radius: 6, garis: { warna: '#7DD3FC', lebar: 2 } },
-    bg(ctx) {
-      ctx.fillStyle = '#0C4A6E'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ctx.strokeStyle = 'rgba(186,230,253,.22)'; ctx.lineWidth = 1;
-      for (let x = 0; x <= LEBAR; x += 24) { ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, TINGGI); ctx.stroke(); }
-      for (let y = 0; y <= TINGGI; y += 24) { ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(LEBAR, y + .5); ctx.stroke(); }
-      ctx.strokeStyle = 'rgba(186,230,253,.55)'; ctx.lineWidth = 1.6;
-      rr(ctx, 30, 30, LEBAR - 60, TINGGI - 60, 8); ctx.stroke();
-      ctx.setLineDash([6, 5]); ctx.beginPath();
-      ctx.moveTo(30, 800); ctx.lineTo(LEBAR - 30, 800); ctx.stroke(); ctx.setLineDash([]);
-      ctx.font = `700 15px ${MONO}`; ctx.fillStyle = 'rgba(186,230,253,.85)';
-      ctx.textAlign = 'left';  ctx.fillText('S-042 / OPTIK', 46, 56);
-      ctx.textAlign = 'right'; ctx.fillText('SKALA 1:1', LEBAR - 46, 56);
-      ctx.textAlign = 'center'; ctx.fillText('✂ — — —', LEBAR / 2, 796);
-    },
-    judul: { teks: 'SPESIMEN 042', font: `700 28px ${MONO}`, warna: '#BAE6FD' }
-  },
-  chrome: {
-    nama: 'Y2K Chrome', grup: 'Minimal', gelap: false,
-    foto: { radius: 20, garis: { warna: 'rgba(255,255,255,.75)', lebar: 3 } },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, LEBAR, TINGGI, [[0, '#E0F2FE'], [.3, '#C4B5FD'], [.5, '#F0F9FF'], [.7, '#FBCFE8'], [1, '#A5F3FC']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      ledakan(ctx, 300, 300, 300, 210, 18, 'rgba(255,255,255,.4)', .05);
-    },
-    judul: { teks: 'Y2K', font: `800 70px ${SANS}`, warna: '#7C3AED' }
-  },
-  holo: {
-    nama: 'Holografis', grup: 'Minimal', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 28, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = gradien(ctx, 0, 0, LEBAR, TINGGI, [[0, '#67E8F9'], [.22, '#C084FC'], [.45, '#F9A8D4'], [.68, '#A5B4FC'], [.85, '#5EEAD4'], [1, '#FDE68A']]);
-      ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('holo');
-      ctx.globalCompositeOperation = 'overlay';
-      for (let i = 0; i < 10; i++) { ctx.fillStyle = `rgba(255,255,255,${(.05 + R() * .12).toFixed(3)})`; ctx.fillRect(0, R() * TINGGI, LEBAR, 30 + R() * 90); }
-      ctx.globalCompositeOperation = 'source-over';
-    },
-    judul: { teks: 'HOLO', font: `700 44px ${SANS}`, warna: '#0E7490' }
-  },
-  marble: {
-    nama: 'Carrara', grup: 'Minimal', gelap: false,
-    foto: { radius: 0, garis: { warna: '#D6D3D1', lebar: 2 } },
-    bg(ctx) {
-      ctx.fillStyle = '#FAFAF9'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('marble');
-      for (let v = 0; v < 16; v++) {
-        ctx.strokeStyle = `rgba(87,83,78,${(.08 + R() * .18).toFixed(3)})`;
-        ctx.lineWidth = .6 + R() * 3.4;
-        ctx.beginPath();
-        let x = R() * LEBAR, y = -20;
-        ctx.moveTo(x, y);
-        while (y < TINGGI + 20) { x += (R() - .5) * 130; y += 60 + R() * 90; ctx.lineTo(x, y); }
-        ctx.stroke();
-      }
-      ctx.strokeStyle = '#D6D3D1'; ctx.lineWidth = 1; ctx.strokeRect(30, 30, LEBAR - 60, TINGGI - 60);
-    },
-    judul: { teks: 'CARRARA', font: `400 40px ${SERIF}`, warna: '#57534E' }
-  },
-  terrazzo: {
-    nama: 'Terrazzo', grup: 'Minimal', gelap: false,
-    foto: { alas: '#FFFFFF', radius: 18, bayang: true },
-    bg(ctx) {
-      ctx.fillStyle = '#F5F5F4'; ctx.fillRect(0, 0, LEBAR, TINGGI);
-      const R = acak('terrazzo');
-      const palet = ['#FCA5A5', '#93C5FD', '#86EFAC', '#FDE68A', '#C4B5FD', '#D6D3D1'];
-      for (let i = 0; i < 320; i++) {
-        ctx.save();
-        ctx.translate(R() * LEBAR, R() * TINGGI); ctx.rotate(R() * 6.28);
-        ctx.fillStyle = palet[Math.floor(R() * palet.length)];
-        const s = 5 + R() * 13;
-        ctx.beginPath();
-        for (let k = 0; k < 5; k++) { const a = k * 1.2566, rr2 = s * (.6 + R() * .6); k ? ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2) : ctx.moveTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
-        ctx.closePath(); ctx.fill();
-        ctx.restore();
-      }
-    },
-    judul: { teks: 'TERRAZZO', font: `600 30px ${SANS}`, warna: '#0F172A' }
-  }
-};
+        async function startCaptureSequence() {
+            document.getElementById('btn-capture').classList.add('hidden');
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('session-counter').innerText = `Sesi ${i} / 3`;
+                await runTimer(3);
+                captureFrame();
+                flashEffect();
+                if (i < 3) await new Promise(r => setTimeout(r, 1000));
+            }
+            stopCamera();
+            processPhotos();
+        }
 
-/* ══════════════════════════════════════════════════════════════
-   OVERLAY LUCU — digambar DI ATAS foto
-   fn(ctx, w, h) memakai koordinat lokal foto (0,0 → w,h)
-   ══════════════════════════════════════════════════════════════ */
-const OVERLAY = {
-  mahkota: {
-    label: 'Mahkota', sw: '#F5B301',
-    fn(ctx, w, h) {
-      const cx = w / 2, y = h * .07, s = Math.min(w, h) * .17;
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(cx - s, y + s * .8); ctx.lineTo(cx - s, y - s * .5);
-      ctx.lineTo(cx - s * .5, y + s * .1); ctx.lineTo(cx, y - s * .9);
-      ctx.lineTo(cx + s * .5, y + s * .1); ctx.lineTo(cx + s, y - s * .5);
-      ctx.lineTo(cx + s, y + s * .8); ctx.closePath();
-      ctx.fillStyle = gradien(ctx, cx - s, y - s, cx + s, y + s, [[0, '#FFE08A'], [.5, '#F5B301'], [1, '#C88A00']]);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(120,70,0,.5)'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#DC2626';
-      ctx.beginPath(); ctx.arc(cx, y + s * .45, s * .15, 0, 6.2832); ctx.fill();
-      ctx.restore();
-    }
-  },
-  kacamata: {
-    label: 'Kacamata', sw: '#0F172A',
-    fn(ctx, w, h) {
-      const y = h * .42, w2 = w * .21, h2 = h * .075, jarak = w * .05;
-      ctx.save();
-      ctx.fillStyle = '#0B1120';
-      ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
-      rr(ctx, w / 2 - jarak - w2, y - h2, w2, h2 * 2, h2 * .5); ctx.fill();
-      rr(ctx, w / 2 + jarak, y - h2, w2, h2 * 2, h2 * .5); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillRect(w / 2 - jarak, y - 3, jarak * 2, 6);
-      ctx.fillStyle = 'rgba(255,255,255,.28)';
-      rr(ctx, w / 2 - jarak - w2 + 6, y - h2 + 5, w2 * .3, h2 * .5, 3); ctx.fill();
-      rr(ctx, w / 2 + jarak + 6, y - h2 + 5, w2 * .3, h2 * .5, 3); ctx.fill();
-      ctx.restore();
-    }
-  },
-  kumis: {
-    label: 'Kumis', sw: '#3F2A1B',
-    fn(ctx, w, h) {
-      const cx = w / 2, y = h * .5, s = Math.min(w, h) * .16;
-      ctx.save(); ctx.fillStyle = '#2B1B10';
-      ctx.beginPath();
-      ctx.moveTo(cx - s * 1.7, y - s * .15);
-      ctx.quadraticCurveTo(cx - s * .9, y - s * .75, cx, y - s * .05);
-      ctx.quadraticCurveTo(cx + s * .9, y - s * .75, cx + s * 1.7, y - s * .15);
-      ctx.quadraticCurveTo(cx + s * 1.1, y + s * .65, cx + s * .45, y + s * .25);
-      ctx.quadraticCurveTo(cx, y + s * .05, cx - s * .45, y + s * .25);
-      ctx.quadraticCurveTo(cx - s * 1.1, y + s * .65, cx - s * 1.7, y - s * .15);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-    }
-  },
-  topi: {
-    label: 'Topi Pesta', sw: '#EC4899',
-    fn(ctx, w, h) {
-      const s = Math.min(w, h) * .19;
-      ctx.save();
-      ctx.translate(w * .74, h * .1); ctx.rotate(-.28);
-      ctx.fillStyle = gradien(ctx, -s, 0, s, h * .42, [[0, '#F472B6'], [.5, '#EC4899'], [1, '#BE185D']]);
-      ctx.beginPath(); ctx.moveTo(-s * .6, h * .42); ctx.lineTo(0, 0); ctx.lineTo(s * .6, h * .42); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = s * .16;
-      ctx.beginPath(); ctx.moveTo(-s * .45, h * .42 * .66); ctx.lineTo(s * .45, h * .42 * .66); ctx.stroke();
-      ctx.fillStyle = '#FDE047'; ctx.beginPath(); ctx.arc(0, -s * .12, s * .22, 0, 6.2832); ctx.fill();
-      ctx.restore();
-    }
-  },
-  teling: {
-    label: 'Teling Kucing', sw: '#FB923C',
-    fn(ctx, w, h) {
-      const s = Math.min(w, h) * .21;
-      ctx.save();
-      ctx.lineJoin = 'round'; ctx.lineWidth = s * .09;
-      [w * .28, w * .72].forEach(x => {
-        const dasar = h * .2;
-        ctx.beginPath();
-        ctx.moveTo(x - s * .5, dasar);
-        ctx.quadraticCurveTo(x - s * .42, dasar - s * .78, x - s * .16, dasar - s * 1.02);
-        ctx.quadraticCurveTo(x + s * .12, dasar - s * .8, x + s * .46, dasar - s * .04);
-        ctx.quadraticCurveTo(x + s * .3, dasar + s * .1, x - s * .5, dasar);
-        ctx.closePath();
-        ctx.fillStyle = '#F97316'; ctx.strokeStyle = 'rgba(60,25,10,.55)';
-        ctx.fill(); ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x - s * .3, dasar - s * .06);
-        ctx.quadraticCurveTo(x - s * .24, dasar - s * .56, x - s * .1, dasar - s * .68);
-        ctx.quadraticCurveTo(x + s * .06, dasar - s * .5, x + s * .24, dasar - s * .12);
-        ctx.closePath();
-        ctx.fillStyle = '#FBCFE8'; ctx.fill();
-      });
-      ctx.restore();
-    }
-  },
-  merona: {
-    label: 'Merona', sw: '#FDA4AF',
-    fn(ctx, w, h) {
-      ctx.save(); ctx.fillStyle = 'rgba(251,113,133,.42)';
-      [[w * .29, h * .5], [w * .71, h * .5]].forEach(([x, y]) => {
-        ctx.beginPath(); ctx.ellipse(x, y, w * .085, h * .045, 0, 0, 6.2832); ctx.fill();
-      });
-      ctx.restore();
-    }
-  },
-  kilau: {
-    label: 'Kilau', sw: '#FDE047',
-    fn(ctx, w, h) {
-      const R = acak('kilau');
-      ctx.save();
-      for (let i = 0; i < 14; i++) {
-        const x = R() * w, y = R() * h, s = Math.min(w, h) * (.03 + R() * .05);
-        bintang(ctx, x, y, s, s * .3, R() * 6.28, `rgba(255,255,255,${(.6 + R() * .4).toFixed(3)})`);
-        bintang(ctx, x, y, s * .62, s * .2, R() * 6.28, 'rgba(253,224,71,.85)');
-      }
-      ctx.restore();
-    }
-  }
-};
+        function runTimer(seconds) {
+            return new Promise(resolve => {
+                let s = seconds;
+                const display = document.getElementById('timer-display');
+                display.style.opacity = '1'; display.innerText = s;
+                const interval = setInterval(() => {
+                    s--;
+                    if (s > 0) { display.innerText = s; }
+                    else { clearInterval(interval); display.style.opacity = '0'; resolve(); }
+                }, 1000);
+            });
+        }
 
-/* ══════════════════ Toast ══════════════════ */
-let jedaToast = null;
-function toast(pesan, galat = false) {
-  const t = document.getElementById('toast');
-  t.innerHTML = '';
-  const ikon = document.createElement('span'); ikon.textContent = galat ? '⚠️' : '✨';
-  const teks = document.createElement('span'); teks.textContent = pesan;
-  t.append(ikon, teks);
-  t.classList.add('tampil');
-  clearTimeout(jedaToast);
-  jedaToast = setTimeout(() => t.classList.remove('tampil'), 3200);
-}
+        function flashEffect() {
+            const flash = document.getElementById('flash-overlay');
+            flash.classList.add('flash-active');
+            setTimeout(() => flash.classList.remove('flash-active'), 150);
+        }
 
-/* ══════════════════ Layar ══════════════════ */
-function tampilLayar(nama) {
-  document.querySelectorAll('.layar').forEach(el => el.classList.remove('aktif'));
-  const el = document.getElementById('layar-' + nama);
-  if (el) el.classList.add('aktif');
-  window.scrollTo(0, 0);
-}
+        function captureFrame() {
+            const video = document.getElementById('video-element');
+            const canvas = document.createElement('canvas');
+            const targetRatio = PHOTO_W / PHOTO_H;
+            const videoRatio = video.videoWidth / video.videoHeight;
+            let drawW, drawH, startX, startY;
 
-/* ══════════════════ Galeri bingkai ══════════════════ */
-const pengamat = new IntersectionObserver(daftar => {
-  daftar.forEach(t => {
-    if (!t.isIntersecting) return;
-    pengamat.unobserve(t.target);
-    gambarPratinjau(t.target);
-  });
-}, { rootMargin: '400px 0px' });
+            if (videoRatio > targetRatio) {
+                drawH = video.videoHeight; drawW = drawH * targetRatio;
+                startX = (video.videoWidth - drawW) / 2; startY = 0;
+            } else {
+                drawW = video.videoWidth; drawH = drawW / targetRatio;
+                startX = 0; startY = (video.videoHeight - drawH) / 2;
+            }
 
-function gambarPratinjau(kartu) {
-  const b = BININGKAI[kartu.dataset.bingkai];
-  const kanvas = kartu.querySelector('canvas');
-  if (!b || !kanvas || kanvas.dataset.sudah) return;
-  kanvas.dataset.sudah = '1';
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = 200, h = Math.round(200 * (TINGGI / LEBAR));
-  kanvas.width = w * dpr; kanvas.height = h * dpr;
-  const ctx = kanvas.getContext('2d');
-  ctx.scale((w / LEBAR) * dpr, (h / TINGGI) * dpr);
-  composeStrip(ctx, b, null);
-}
+            canvas.width = PHOTO_W; canvas.height = PHOTO_H;
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+            ctx.drawImage(video, startX, startY, drawW, drawH, 0, 0, PHOTO_W, PHOTO_H);
+            capturedPhotos.push(canvas.toDataURL('image/jpeg', 0.95));
+        }
 
-function buatKartu(id) {
-  const b = BININGKAI[id];
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'kartu';
-  btn.dataset.bingkai = id;
-  btn.setAttribute('aria-pressed', String(id === bingkaiDipilih));
-  if (id === bingkaiDipilih) btn.classList.add('terpilih');
+        function processPhotos() {
+            switchView('result');
+            document.getElementById('processing-loader').classList.remove('hidden');
+            document.getElementById('result-content').classList.add('hidden');
+            document.getElementById('final-image').classList.remove('translate-y-0', 'opacity-100');
 
-  const badge = document.createElement('span');
-  badge.className = 'centang';
-  badge.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+            const canvas = document.createElement('canvas');
+            canvas.width = CANVAS_W; canvas.height = CANVAS_H;
+            const ctx = canvas.getContext('2d');
+            const theme = themes[selectedTheme];
 
-  const gambar = document.createElement('span');
-  gambar.className = 'gambar';
-  const kanvas = document.createElement('canvas');
-  gambar.appendChild(kanvas);
+            if (selectedTheme === 'lumina') {
+                const grad = ctx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
+                grad.addColorStop(0, '#F5F3FF'); grad.addColorStop(0.5, '#E0E7FF'); grad.addColorStop(1, '#FAE8FF');
+                ctx.fillStyle = grad; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+                ctx.fillStyle = '#C4B5FD'; ctx.font = '40px Arial';
+                ctx.fillText('✧', 80, 100); ctx.fillText('✧', CANVAS_W - 80, CANVAS_H - 150);
+            } else {
+                ctx.fillStyle = theme.bg;
+                ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            }
 
-  const label = document.createElement('span');
-  label.style.cssText = 'display:block;margin-top:8px;padding:0 2px 2px';
-  const nama = document.createElement('span');
-  nama.style.cssText = 'display:block;font-size:12px;font-weight:700;color:#44403C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-  nama.textContent = b.nama;
-  const grup = document.createElement('span');
-  grup.style.cssText = 'display:block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#A8A29E';
-  grup.textContent = b.grup;
-  label.append(nama, grup);
+            if (selectedTheme === 'aura') {
+                ctx.strokeStyle = '#F1F5F9'; ctx.lineWidth = 1;
+                for (let i = 0; i < CANVAS_W; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CANVAS_H); ctx.stroke(); }
+                for (let j = 0; j < CANVAS_H; j += 40) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(CANVAS_W, j); ctx.stroke(); }
+            } else if (selectedTheme === 'noir') {
+                ctx.strokeStyle = '#D4AF37'; ctx.lineWidth = 2;
+                ctx.strokeRect(15, 15, CANVAS_W - 30, CANVAS_H - 30);
+                ctx.lineWidth = 1; ctx.strokeRect(22, 22, CANVAS_W - 44, CANVAS_H - 44);
+            } else if (selectedTheme === 'matcha') {
+                ctx.fillStyle = '#DCFCE7'; ctx.beginPath(); ctx.arc(0, 150, 180, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#BBF7D0'; ctx.beginPath(); ctx.arc(CANVAS_W, CANVAS_H - 250, 220, 0, Math.PI * 2); ctx.fill();
+            } else if (selectedTheme === 'velvet') {
+                const radial = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H, 50, CANVAS_W / 2, CANVAS_H, 600);
+                radial.addColorStop(0, '#FFE4E6'); radial.addColorStop(1, 'transparent');
+                ctx.fillStyle = radial; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            } else if (selectedTheme === 'oud') {
+                ctx.strokeStyle = '#1C1917'; ctx.lineWidth = 4;
+                ctx.strokeRect(20, 20, CANVAS_W - 40, CANVAS_H - 40);
+            } else if (selectedTheme === 'santalus') {
+                ctx.strokeStyle = 'rgba(252, 231, 243, 0.6)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(100, 100, 150, 0, Math.PI); ctx.stroke();
+                ctx.beginPath(); ctx.arc(CANVAS_W - 100, CANVAS_H - 100, 200, Math.PI, 0); ctx.stroke();
+            } else if (selectedTheme === 'cendrawasih') {
+                ctx.strokeStyle = 'rgba(165, 243, 252, 0.4)'; ctx.lineWidth = 1;
+                for(let i=50; i<CANVAS_W; i+=100) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CANVAS_H); ctx.stroke(); }
+            } else if (selectedTheme === 'kasmir') {
+                ctx.fillStyle = 'rgba(186, 230, 253, 0.3)';
+                ctx.beginPath(); ctx.arc(CANVAS_W, 0, 300, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(0, CANVAS_H, 250, 0, Math.PI * 2); ctx.fill();
+            }
 
-  btn.append(badge, gambar, label);
-  btn.addEventListener('click', () => pilihBingkai(id));
-  return btn;
-}
+            const drawPhoto = (img, y) => {
+                const x = PADDING; const w = PHOTO_W; const h = PHOTO_H; const r = theme.radius;
 
-function gambarDaftar() {
-  const q = (document.getElementById('cari').value || '').trim().toLowerCase();
-  const wadah = document.getElementById('daftar-bingkai');
-  const kosong = document.getElementById('bingo-kosong');
-  wadah.innerHTML = '';
-  pengamat.disconnect();
+                if (['aura', 'matcha', 'lumina'].includes(selectedTheme)) {
+                    ctx.save();
+                    ctx.shadowColor = "rgba(0,0,0,0.08)"; ctx.shadowBlur = 15; ctx.shadowOffsetY = 8;
+                    ctx.fillStyle = '#FFF';
+                    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.fill();
+                    ctx.restore();
+                }
 
-  const id = Object.keys(BININGKAI).filter(k =>
-    !q || BININGKAI[k].nama.toLowerCase().includes(q) || BININGKAI[k].grup.toLowerCase().includes(q));
+                ctx.save(); ctx.beginPath();
+                ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath(); ctx.clip();
+                ctx.drawImage(img, x, y, w, h);
+                ctx.restore();
 
-  if (!id.length) {
-    kosong.style.display = 'block';
-    document.getElementById('bingo-kosong-teks').textContent = '“' + q + '”';
-    return;
-  }
-  kosong.style.display = 'none';
+                if (selectedTheme === 'velvet') {
+                    ctx.strokeStyle = theme.border; ctx.lineWidth = 8;
+                    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.stroke();
+                } else if (selectedTheme === 'oud') {
+                    ctx.strokeStyle = '#D6D3D1'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+                    ctx.fillStyle = '#1C1917'; ctx.fillRect(x + 6, y + 6, w, h); 
+                    ctx.drawImage(img, x, y, w, h);
+                    ctx.strokeRect(x, y, w, h);
+                }
+            };
 
-  const grup = {};
-  id.forEach(k => (grup[BININGKAI[k].grup] ||= []).push(k));
+            let loadedCount = 0;
+            const images = [new Image(), new Image(), new Image()];
 
-  Object.entries(grup).forEach(([namaGrup, isi]) => {
-    const seksi = document.createElement('div');
-    seksi.style.marginBottom = '32px';
-    const judul = document.createElement('h3');
-    judul.className = 'grup-judul';
-    judul.textContent = namaGrup;
-    const kisi = document.createElement('div');
-    kisi.className = 'kisi-bingkai';
-    isi.forEach(k => { const c = buatKartu(k); kisi.appendChild(c); pengamat.observe(c); });
-    seksi.append(judul, kisi);
-    wadah.appendChild(seksi);
-  });
+            for (let i = 0; i < 3; i++) {
+                images[i].onload = () => {
+                    loadedCount++;
+                    if (loadedCount === 3) {
+                        let startY = PADDING + 20;
+                        for (let j = 0; j < 3; j++) {
+                            drawPhoto(images[j], startY);
+                            startY += PHOTO_H + SPACING;
+                        }
 
-  perbaruiRingkasan();
-}
+                        ctx.fillStyle = theme.textColor;
+                        ctx.font = theme.font;
+                        ctx.textAlign = 'center';
+                        ctx.fillText(theme.text, CANVAS_W / 2, startY + 60);
 
-function pilihBingkai(id) {
-  if (!BININGKAI[id]) return;
-  bingkaiDipilih = id;
-  simpan.simpan('bingkai', id);
-  document.querySelectorAll('.kartu').forEach(k => {
-    const on = k.dataset.bingkai === id;
-    k.classList.toggle('terpilih', on);
-    k.setAttribute('aria-pressed', String(on));
-  });
-  perbaruiRingkasan();
-}
+                        ctx.fillStyle = selectedTheme === 'noir' || selectedTheme === 'oud' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+                        ctx.font = '500 12px "Plus Jakarta Sans"';
+                        ctx.fillText('captured by momentara.', CANVAS_W / 2, CANVAS_H - 30);
 
-/* Mengacak dari bingkai yang sedang terlihat, agar pencarian tidak bertabrakan. */
-function acakBingkai() {
-  const terlihat = [...document.querySelectorAll('.kartu')].map(k => k.dataset.bingkai);
-  const kandidat = (terlihat.length > 1 ? terlihat : Object.keys(BININGKAI)).filter(k => k !== bingkaiDipilih);
-  if (!kandidat.length) return;
-  const next = kandidat[Math.floor(Math.random() * kandidat.length)];
-  pilihBingkai(next);
-  const kartu = document.querySelector(`.kartu[data-bingkai="${next}"]`);
-  if (kartu) kartu.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  toast('Acak: ' + BININGKAI[next].nama);
-}
+                        finalCanvasData = canvas.toDataURL('image/png');
 
-function perbaruiRingkasan() {
-  const el = document.getElementById('ringkasan');
-  if (!el) return;
-  const b = BININGKAI[bingkaiDipilih];
-  const n = overlayAktif.size;
-  el.textContent = `${b.nama} · ${JUMLAH} foto${n ? ` · ${n} overlay` : ''}`;
-}
+                        setTimeout(() => {
+                            document.getElementById('processing-loader').classList.add('hidden');
+                            document.getElementById('result-content').classList.remove('hidden');
+                            document.getElementById('result-content').classList.add('flex');
 
-/* ══════════════════ Chip overlay ══════════════════ */
-function bangunChips() {
-  const wadah = document.getElementById('daftar-overlay');
-  wadah.innerHTML = '';
-  Object.entries(OVERLAY).forEach(([id, o]) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'chip';
-    chip.dataset.overlay = id;
+                            const finalImg = document.getElementById('final-image');
+                            finalImg.src = finalCanvasData;
 
-    const kanvas = document.createElement('canvas');
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = 52, h = 39;
-    kanvas.width = w * dpr; kanvas.height = h * dpr;
-    const ctx = kanvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    ctx.fillStyle = '#D6D3D1';
-    rr(ctx, 0, 0, w, h, 4); ctx.fill();
-    ctx.save(); rr(ctx, 0, 0, w, h, 4); ctx.clip();
-    o.fn(ctx, w, h);
-    ctx.restore();
+                            setTimeout(() => {
+                                finalImg.classList.add('translate-y-0', 'opacity-100');
+                                finalImg.classList.remove('translate-y-4', 'opacity-0');
+                            }, 50);
 
-    const teks = document.createElement('span');
-    teks.textContent = o.label;
-    chip.append(kanvas, teks);
-    chip.addEventListener('click', () => toggleOverlay(id));
-    wadah.appendChild(chip);
-  });
-  sinkronChips();
-}
+                        }, 1200);
+                    }
+                };
+                images[i].src = capturedPhotos[i];
+            }
+        }
 
-function toggleOverlay(id) {
-  if (overlayAktif.has(id)) overlayAktif.delete(id);
-  else overlayAktif.add(id);
-  simpan.simpan('overlay', [...overlayAktif]);
-  sinkronChips();
-  perbaruiRingkasan();
-}
-function hapusSemuaOverlay() {
-  overlayAktif.clear();
-  simpan.simpan('overlay', []);
-  sinkronChips();
-  perbaruiRingkasan();
-}
-function sinkronChips() {
-  document.querySelectorAll('[data-overlay]').forEach(c => c.classList.toggle('on', overlayAktif.has(c.dataset.overlay)));
-  document.getElementById('tombol-hapus-overlay').hidden = overlayAktif.size === 0;
-}
-
-/* ══════════════════ Menggambar strip ══════════════════ */
-function gambarFoto(ctx, b, sumber, x, y, w, h) {
-  const p = b.foto || {};
-  const radius = p.radius ?? 0;
-  let ruang = p.ruang ?? 0;
-  if (typeof ruang === 'number') ruang = { x: ruang, y: ruang, b: ruang };
-  const rx = ruang.x || 0, ry = ruang.y || 0, rb = ruang.b || 0;
-  const iw = w - rx * 2, ih = h - ry - rb;
-
-  if (p.alas) {
-    ctx.save();
-    const bay = p.bayang || { x: 0, y: 8, blur: 15, warna: 'rgba(0,0,0,.08)' };
-    if (bay) { ctx.shadowColor = bay.warna; ctx.shadowBlur = bay.blur; ctx.shadowOffsetX = bay.x || 0; ctx.shadowOffsetY = bay.y || 0; }
-    ctx.fillStyle = p.alas;
-    rr(ctx, x, y, w, h, radius); ctx.fill();
-    ctx.restore();
-  } else if (p.bayang) {
-    ctx.save();
-    ctx.shadowColor = p.bayang.warna; ctx.shadowBlur = p.bayang.blur;
-    ctx.shadowOffsetX = p.bayang.x || 0; ctx.shadowOffsetY = p.bayang.y || 0;
-    ctx.fillStyle = 'rgba(0,0,0,.5)';
-    rr(ctx, x, y, w, h, radius); ctx.fill();
-    ctx.restore();
-  }
-
-  ctx.save();
-  rr(ctx, x + rx, y + ry, iw, ih, Math.max(0, radius - Math.min(rx, radius)));
-  ctx.clip();
-  // translasi dulu: overlay memakai koordinat lokal foto
-  ctx.save();
-  ctx.translate(x + rx, y + ry);
-  if (sumber) {
-    const s = Math.max(iw / sumber.width, ih / sumber.height);   // "cover": foto penuh, tanpa garis samping
-    const dw = sumber.width * s, dh = sumber.height * s;
-    ctx.drawImage(sumber, (iw - dw) / 2, (ih - dh) / 2, dw, dh);
-  } else {
-    ctx.fillStyle = '#D6D3D1'; ctx.fillRect(0, 0, iw, ih);
-    ctx.fillStyle = 'rgba(255,255,255,.55)';
-    ctx.beginPath(); ctx.arc(iw / 2, ih * .38, Math.min(iw, ih) * .17, 0, 6.2832); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(iw / 2, ih * .95, iw * .3, ih * .3, 0, Math.PI, 0); ctx.fill();
-  }
-  overlayGambar.forEach(id => OVERLAY[id].fn(ctx, iw, ih));
-  ctx.restore();
-  ctx.restore();
-
-  if (p.garis) {
-    ctx.save();
-    ctx.strokeStyle = p.garis.warna; ctx.lineWidth = p.garis.lebar;
-    rr(ctx, x + p.garis.lebar / 2, y + p.garis.lebar / 2, w - p.garis.lebar, h - p.garis.lebar, radius);
-    ctx.stroke(); ctx.restore();
-  }
-}
-
-function composeStrip(ctx, b, foto) {
-  ctx.clearRect(0, 0, LEBAR, TINGGI);
-  ctx.textBaseline = 'alphabetic';
-  b.bg(ctx, LEBAR, TINGGI);
-
-  for (let i = 0; i < JUMLAH; i++) {
-    gambarFoto(ctx, b, foto && foto[i] ? foto[i] : null, MARGIN, yFoto(i), FOTO_L, FOTO_T);
-  }
-
-  if (b.atas) b.atas(ctx, LEBAR, TINGGI);   // ctx selalu jadi argumen pertama
-
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.fillStyle = b.judul.warna;
-  ctx.font = b.judul.font;
-  ctx.fillText(b.judul.teks, LEBAR / 2, Y_JUDUL);
-  ctx.restore();
-
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.fillStyle = b.gelap ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.32)';
-  ctx.font = `500 12px ${SANS}`;
-  ctx.fillText('dibuat dengan momentara.', LEBAR / 2, Y_KAKI);
-  ctx.restore();
-}
-
-function renderStrip(foto) {
-  const c = document.createElement('canvas');
-  c.width = LEBAR; c.height = TINGGI;
-  composeStrip(c.getContext('2d'), BININGKAI[bingkaiDipilih], foto);
-  return c;
-}
-
-/* ══════════════════ Kamera ══════════════════ */
-const tunggu = ms => new Promise(r => setTimeout(r, ms));
-
-async function mulaiKamera() {
-  sesi++;
-  fotoTerekam = [];
-  const video = document.getElementById('video');
-  try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('tidak didukung');
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
-    });
-    video.srcObject = stream;
-    await video.play().catch(() => {});
-    if (video.readyState < 2) await tungguVideo(video);
-
-    document.getElementById('total-foto').textContent = JUMLAH;
-    document.getElementById('hitung-foto').textContent = '1';
-    document.getElementById('shutter').classList.remove('sembunyi');
-    document.getElementById('hitung').style.opacity = '0';
-    tampilLayar('kamera');
-  } catch (err) {
-    stopStream();
-    const pesan = String(err && err.name || '');
-    if ( pesan === 'NotAllowedError')
-      toast('Izin kamera ditolak. Allow kamera di pengaturan browser.', true);
-    else if (pesan === 'NotFoundError')
-      toast('Tidak ada kamera yang ditemukan.', true);
-    else if (pesan === 'NotReadableError')
-      toast('Kamera sedang dipakai aplikasi lain.', true);
-    else
-      toast('Kamera tidak bisa dibuka. Coba jalankan lewat localhost.', true);
-  }
-}
-
-function tungguVideo(video) {
-  return new Promise(resolve => {
-    const selesai = () => { bersihkan(); resolve(); };
-    const batas = setTimeout(selesai, 4000);
-    function bersihkan() { clearTimeout(batas); video.removeEventListener('loadeddata', selesai); video.removeEventListener('error', selesai); }
-    video.addEventListener('loadeddata', selesai);
-    video.addEventListener('error', selesai);
-  });
-}
-
-function stopStream() {
-  clearInterval(timerRekam); timerRekam = null;
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-  const video = document.getElementById('video');
-  if (video) video.srcObject = null;
-}
-
-function batalkan() {
-  sesi++;                        // batalkan urutan yang sedang berjalan
-  stopStream();
-  fotoTerekam = [];
-  const s = document.getElementById('shutter');
-  if (s) s.classList.remove('sembunyi');
-  tampilLayar('pilih');
-}
-
-async function mulaiRangkaian() {
-  const milikSaya = ++sesi;
-  const tombol = document.getElementById('shutter');
-  const video = document.getElementById('video');
-  const ketik = document.getElementById('hitung-foto');
-  tombol.classList.add('sembunyi');
-  fotoTerekam = [];
-
-  for (let i = 0; i < JUMLAH; i++) {
-    if (milikSaya !== sesi) return;
-    ketik.textContent = String(i + 1);
-    const ok = await hitungMundur(3, milikSaya);
-    if (!ok) return;
-    if (video.readyState < 2) await tungguVideo(video);
-    if (milikSaya !== sesi) return;
-    ambilFoto(video);
-    kilatEfek();
-    if (i < JUMLAH - 1) await tunggu(900);
-  }
-
-  stopStream();
-  prosesFoto();
-}
-
-function hitungMundur(detik, milikSaya) {
-  return new Promise(resolve => {
-    const layar = document.getElementById('hitung');
-    let s = detik, interval = null;
-    const selesai = () => { clearInterval(interval); layar.style.opacity = '0'; resolve(milikSaya === sesi); };
-    layar.style.opacity = '1';
-    layar.textContent = s;
-    interval = setInterval(() => {
-      if (milikSaya !== sesi) { selesai(); return; }
-      s--;
-      if (s > 0) layar.textContent = s;
-      else selesai();
-    }, 1000);
-  });
-}
-
-function kilatEfek() {
-  const k = document.getElementById('kilat');
-  k.classList.add('nyala');
-  setTimeout(() => k.classList.remove('nyala'), 150);
-}
-
-function ambilFoto(video) {
-  if (!video.videoWidth) return;
-  const kanvas = document.createElement('canvas');
-  kanvas.width = FOTO_L; kanvas.height = FOTO_T;
-  const ctx = kanvas.getContext('2d');
-  const target = FOTO_L / FOTO_T;
-  const asli = video.videoWidth / video.videoHeight;
-  let sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
-  if (asli > target) { sw = sh * target; sx = (video.videoWidth - sw) / 2; }
-  else { sh = sw / target; sy = (video.videoHeight - sh) / 2; }
-  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, FOTO_L, FOTO_T);
-  fotoTerekam.push(kanvas);
-}
-
-/* ══════════════════ Hasil ══════════════════ */
-async function prosesFoto() {
-  tampilLayar('hasil');
-  const proses = document.getElementById('proses');
-  const isi = document.getElementById('isi-hasil');
-  const img = document.getElementById('hasil');
-
-  proses.style.display = 'flex';
-  isi.style.display = 'none';
-
-  // Tunggu font agar canvas tidak diam-diam memakai font cadangan — TAPI
-  // jangan sampai menggantung: kalau Google Fonts lambat atau gagal dimuat,
-  // lebih baik hasil strip muncul dengan font sistem daripada terjebak
-  // di spinner selamanya.
-  try {
-    await Promise.race([
-      Promise.all([
-        document.fonts.load(`600 30px ${SANS}`),
-        document.fonts.load(`italic 34px ${SERIF}`),
-        document.fonts.load(`700 34px ${FUN}`),
-        document.fonts.load(`700 28px ${MONO}`),
-        document.fonts.load(`700 28px ${TULIS}`)
-      ]).then(() => document.fonts.ready),
-      tunggu(1500)
-    ]);
-  } catch {}
-
-  const lengkap = fotoTerekam.length === JUMLAH;
-  overlayGambar.length = 0;
-  if (lengkap) overlayGambar.push(...overlayAktif);
-
-  await tunggu(350);
-  kanvasHasil = renderStrip(lengkap ? fotoTerekam : null);
-  img.src = kanvasHasil.toDataURL('image/png');
-
-  proses.style.display = 'none';
-  isi.style.display = 'flex';
-  img.style.opacity = '0';
-  requestAnimationFrame(() => { img.style.transition = 'opacity .5s'; img.style.opacity = '1'; });
-
-  if (!lengkap) toast('Sebagian foto tidak terekam — memakai placeholder.', true);
-  fotoTerekam = [];
-}
-
-function unduhGambar() {
-  if (!kanvasHasil) return;
-  kanvasHasil.toBlob(blob => {
-    if (!blob) { toast('Gagal mengekspor gambar.', true); return; }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `momentara-${bingkaiDipilih}-${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast('Strip tersimpan di unduhan.');
-  }, 'image/png');
-}
-
-/* ══════════════════ Menyambungkan event ══════════════════ */
-document.getElementById('tombol-mulai').addEventListener('click', mulaiKamera);
-document.getElementById('tombol-ulang').addEventListener('click', () => { fotoTerekam = []; mulaiKamera(); });
-document.getElementById('tombol-beranda').addEventListener('click', () => { fotoTerekam = []; tampilLayar('pilih'); });
-document.getElementById('tombol-unduh').addEventListener('click', unduhGambar);
-document.getElementById('tombol-batal').addEventListener('click', () => { batalkan(); });
-document.getElementById('shutter').addEventListener('click', mulaiRangkaian);
-document.getElementById('tombol-acak').addEventListener('click', acakBingkai);
-document.getElementById('tombol-hapus-overlay').addEventListener('click', hapusSemuaOverlay);
-document.getElementById('cari').addEventListener('input', gambarDaftar);
-
-// Jangan biarkan kamera tetap menyala saat tab ditinggalkan.
-window.addEventListener('pagehide', () => { sesi++; stopStream(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { sesi++; stopStream(); } });
-
-/* ══════════════════ Mulai ══════════════════ */
-(function mulai() {
-  const tersimpan = simpan.ambil('bingkai', 'aura');
-  bingkaiDipilih = BININGKAI[tersimpan] ? tersimpan : 'aura';
-  const simpanOverlay = simpan.ambil('overlay', []);
-  overlayAktif = new Set(Array.isArray(simpanOverlay) ? simpanOverlay.filter(id => OVERLAY[id]) : []);
-  bangunChips();
-  gambarDaftar();
-})();
-</script>
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `Momentara_${new Date().getTime()}.png`;
+            link.href = finalCanvasData;
+            link.click();
+        }
+    </script>
 </body>
 </html>
