@@ -361,8 +361,7 @@
                 judul: "SimpleCalc",
                 desc: "Aplikasi SimplexCalc dirancang khusus untuk membantu dan mempercepat proses pengerjaan manual algoritma programa linear dengan Metode Simpleks dan Big-M. Dilengkapi dengan kalkulator matriks aljabar yang matematis, sehingga terhindar dari kesalahan hitung dan bisa fokus pada pemahaman logika iterasi.",
                 tag: "Javascript / HTML / TailWind",
-                url: "#",
-                ini: true
+                url: "https://simplexcalc-bytexindonesia.netlify.app/"
             },
             {
                 judul: "Poskes",
@@ -404,10 +403,8 @@
                 const hidup = p.url && p.url !== '#';
 
                 const kartu = document.createElement(hidup ? 'a' : 'div');
-                kartu.className = 'block rounded-xl border p-4 transition ' +
-                    (p.ini ? 'border-stone-300 bg-white shadow-sm '
-                           : 'border-stone-200 bg-stone-50 hover:border-stone-300 hover:bg-white ') +
-                    (hidup ? 'hover:shadow-sm' : '');
+                kartu.className = 'block rounded-xl border border-stone-200 bg-stone-50 p-4 transition hover:border-stone-300 hover:bg-white' +
+                    (hidup ? ' hover:shadow-sm' : '');
 
                 if (hidup) {
                     kartu.href = p.url;
@@ -416,19 +413,9 @@
                 }
 
                 const judul = document.createElement('h4');
-                judul.className = 'text-sm font-bold text-primary leading-snug';
+                judul.className = 'text-sm font-bold text-primary leading-snug mb-2';
                 judul.textContent = p.judul;
-
-                const kepala = document.createElement('div');
-                kepala.className = 'mb-2 flex flex-wrap items-center gap-2';
-                kepala.appendChild(judul);
-
-                if (p.ini) {
-                    const tanda = document.createElement('span');
-                    tanda.className = 'shrink-0 text-[9px] font-bold uppercase tracking-wider text-white bg-primary rounded-full px-2 py-0.5';
-                    tanda.textContent = 'Proyek ini';
-                    kepala.appendChild(tanda);
-                }
+                kartu.appendChild(judul);
 
                 const isi = document.createElement('div');
                 const ket = document.createElement('p');
@@ -436,24 +423,20 @@
                 ket.textContent = p.desc;
                 isi.appendChild(ket);
 
-                // tag dan tautan diletakkan di bawah deskripsi
-                const kaki = document.createElement('div');
-                kaki.className = 'mt-3 flex flex-wrap items-center gap-2';
-
+                // tag berada di bawah deskripsi, tautan tepat di bawah tag
                 const tag = document.createElement('span');
-                tag.className = 'text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full px-2.5 py-1';
+                tag.className = 'mt-3 inline-block text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full px-2.5 py-1';
                 tag.textContent = p.tag;
-                kaki.appendChild(tag);
+                isi.appendChild(tag);
 
                 if (hidup) {
                     const tautan = document.createElement('span');
-                    tautan.className = 'inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400';
+                    tautan.className = 'mt-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400';
                     tautan.innerHTML = 'Buka situs <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
-                    kaki.appendChild(tautan);
+                    isi.appendChild(tautan);
                 }
 
-                isi.appendChild(kaki);
-                kartu.append(kepala, isi);
+                kartu.appendChild(isi);
                 wadah.appendChild(kartu);
             });
         }
