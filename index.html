@@ -239,7 +239,7 @@
 
                     <div class="mt-6 border-t border-dashed border-stone-200 pt-6">
                         <h3 class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4 flex justify-between items-center">
-                            <span>Fitur Momentara</span>
+                            <span>Portofolio Proyek</span>
                             <svg class="w-4 h-4 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                         </h3>
 
@@ -338,67 +338,125 @@
             document.getElementById(`theme-${themeId}`).classList.add('selected');
         }
 
-        // ── Tab Tentang: daftar fitur Momentara ──
-        const FITUR = [
+        // ── Tab Tentang: portofolio proyek ──
+        const PROYEK = [
             {
-                judul: "Tiga Foto Otomatis",
-                desc: "Satu kali tekan tombol rana, kamera langsung mengambil tiga foto beruntun. Tiap foto didahului hitung mundur 3-2-1 dan ditutup kilau putih singkat seperti rana kamera sungguhan.",
-                tag: "Canvas 2D"
+                judul: "Virtual Tour Campus Tel-U",
+                desc: "Sebuah platform web interaktif yang menyajikan virtual tour lingkungan Telkom University berbasis visual 360°. Web ini mengintegrasikan navigasi peta digital yang responsif dan titik informasi (hotspots) interaktif untuk memberikan pengalaman orientasi kampus yang modern, cepat, dan mudah diakses.",
+                tag: "Wordpress",
+                url: "https://360.telkomuniversity.ac.id/"
             },
             {
-                judul: "Sepuluh Bingkai Unik",
-                desc: "Aura Blanc, Noir Ébène, Oud Wood, dan tujuh lainnya. Tiap bingkai punya latar, warna, dan font sendiri yang digambar langsung lewat Canvas API, bukan gambar aset.",
-                tag: "10 Frame"
+                judul: "Kasirin Bro",
+                desc: "Aplikasi Kasir Standar Toko berbasis Web.",
+                tag: "PHP / SQL",
+                url: "#"
             },
             {
-                judul: "Strip 600 × 1600",
-                desc: "Tiga foto berukuran 500 × 375 dirangkai jadi satu strip PNG rasio 4:3 yang rapi, lengkap dengan judul bingkai dan tanda air momentara di bagian bawah.",
-                tag: "PNG Export"
+                judul: "Student Portal",
+                desc: "Sebuah wadah transparan bagi seluruh siswa untuk menyampaikan aspirasi, saran, dan kritik kepada pihak sekolah, yang alur tindak selanjutnya dapat dipantau langsung oleh OSIS serta Kesiswaan, sekaligus dapat dilihat oleh siswa lainnya.",
+                tag: "PHP / SQL",
+                url: "#"
             },
             {
-                judul: "Privasi Penuh",
-                desc: "Tidak ada server, tidak ada unggahan, tidak ada cookie. Foto berpindah langsung dari kamera ke canvas di perangkat, lalu menjadi file yang tersimpan di komputer sendiri.",
-                tag: "Tanpa Server"
+                judul: "Momentara",
+                desc: "Aplikasi web-based photobooth yang mengubah kamera HP atau laptop Anda menjadi bilik foto instan yang seru. Pengguna dapat langsung berpose, memilih berbagai desain frame yang unik dan estetik, serta mengunduh dengan kualitas tinggi untuk langsung dibagikan ke media sosial.",
+                tag: "Javascript / HTML / TailWind",
+                url: "https://momentara-bytexindonesia.netlify.app/",
+                ini: true
             },
             {
-                judul: "Mode Cermin",
-                desc: "Pratinjau kamera dicerminkan seperti cermin sungguhan supaya gampang menyesuaikan posisi, sementara hasil fotonya tetap dipotong rasio 4:3 yang konsisten.",
-                tag: "getUserMedia"
+                judul: "Poskes",
+                desc: "(Pos Kesehatan) dirancang khusus untuk mendukung pelayanan kesehatan di lapangan selama kegiatan MOSAIK ULBI, mulai dari pencatatan pasien baru beserta tanda vitalnya, pemantauan status penanganan secara langsung, hingga rekap riwayat kesehatan yang dapat dibagikan dalam sekali klik. Dibangun dengan antarmuka yang ringan dan alur yang sederhana.",
+                tag: "Javascript / HTML / TailWind",
+                url: "#"
             },
             {
-                judul: "Satu File HTML",
-                desc: "Seluruh aplikasi — markup, gaya, dan logika — tertampung dalam satu index.html tanpa build step dan tanpa dependensi npm. Cukup buka lewat server lokal.",
-                tag: "Tanpa Build"
+                judul: "IftarSync",
+                desc: "Aplikasi modern yang menyelaraskan kebutuhan peserta dan kepanitiaan dalam momen Ramadan. Melalui halaman user yang interaktif, peserta dapat melihat detail acara, mengisi data diri, serta mengonfirmasi kehadiran beserta pesanan khusus mereka. Di sisi lain, panel admin bertindak sebagai pusat kendali cerdas yang melacak aliran dana masuk, memverifikasi bukti bayar, dan menyajikan rekap data akurat untuk menghindari kesalahan komunikasi selama persiapan acara.",
+                tag: "Javascript / GAS / TailWind",
+                url: "#"
+            },
+            {
+                judul: "Queue Tracker",
+                desc: "Dirancang khusus untuk mempercepat proses perekaman data manual lapangan pada praktikum Teori Antrean (Model M/M/s). Dibangun dengan arsitektur yang ringan dan logika penguncian antrean cerdas (Smart Queue Lock) untuk memastikan integritas data.",
+                tag: "Javascript / HTML / TailWind",
+                url: "https://queue-tracker-bytexindonesia.netlify.app/"
+            },
+            {
+                judul: "Laksamana Cloud Storage",
+                desc: "Aplikasi cloud storage gratis. Aplikasi ini dirancang untuk menyederhanakan manajemen file Anda dengan antarmuka yang bersih dan penyimpanan awan yang andal tanpa biaya tersembunyi. Unggah, simpan, dan kelola data Anda kapan saja dengan efisiensi tingkat tinggi.",
+                tag: "Javascript / GAS / TailWind",
+                url: "#"
+            },
+            {
+                judul: "Healing Loko",
+                desc: "Aplikasi pemesanan tiket kereta api online ini dirancang untuk memenuhi tugas akhir dan memberikan pengalaman memesan perjalanan yang cepat, praktis, dan tanpa ribet. Mulai dari cek jadwal real-time, pilih kursi favorit secara interaktif, hingga pembayaran instan, semua bisa diselesaikan dalam hitungan detik agar perjalanan Anda menjadi lebih tenang dan terencana.",
+                tag: "Node JS / React",
+                url: "#"
             }
         ];
 
-        function renderFitur() {
+        function renderProyek() {
             const wadah = document.getElementById('portfolio-list');
             if (!wadah) return;
-            FITUR.forEach(f => {
-                const kartu = document.createElement('div');
-                kartu.className = 'group rounded-xl border border-stone-200 bg-stone-50 p-4 transition hover:border-stone-300 hover:bg-white';
+
+            PROYEK.forEach(p => {
+                const hidup = p.url && p.url !== '#';
+
+                const kartu = document.createElement(hidup ? 'a' : 'div');
+                kartu.className = 'block rounded-xl border p-4 transition ' +
+                    (p.ini ? 'border-stone-300 bg-white shadow-sm '
+                           : 'border-stone-200 bg-stone-50 hover:border-stone-300 hover:bg-white ') +
+                    (hidup ? 'hover:shadow-sm' : '');
+
+                if (hidup) {
+                    kartu.href = p.url;
+                    kartu.target = '_blank';
+                    kartu.rel = 'noopener';
+                }
 
                 const kepala = document.createElement('div');
                 kepala.className = 'flex items-start justify-between gap-3 mb-2';
-                const h = document.createElement('h4');
-                h.className = 'text-sm font-bold text-primary leading-snug';
-                h.textContent = f.judul;
+
+                const kiri = document.createElement('div');
+                kiri.className = 'flex items-center gap-2 min-w-0';
+                const judul = document.createElement('h4');
+                judul.className = 'text-sm font-bold text-primary leading-snug truncate';
+                judul.textContent = p.judul;
+                kiri.appendChild(judul);
+
+                if (p.ini) {
+                    const tanda = document.createElement('span');
+                    tanda.className = 'shrink-0 text-[9px] font-bold uppercase tracking-wider text-white bg-primary rounded-full px-2 py-0.5';
+                    tanda.textContent = 'Proyek ini';
+                    kiri.appendChild(tanda);
+                }
+
                 const tag = document.createElement('span');
                 tag.className = 'shrink-0 text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full px-2.5 py-1';
-                tag.textContent = f.tag;
-                kepala.append(h, tag);
+                tag.textContent = p.tag;
+                kepala.append(kiri, tag);
 
-                const p = document.createElement('p');
-                p.className = 'text-xs sm:text-[13px] leading-relaxed text-stone-500';
-                p.textContent = f.desc;
+                const isi = document.createElement('div');
+                const ket = document.createElement('p');
+                ket.className = 'text-xs sm:text-[13px] leading-relaxed text-stone-500';
+                ket.textContent = p.desc;
+                isi.appendChild(ket);
 
-                kartu.append(kepala, p);
+                if (hidup) {
+                    const tautan = document.createElement('span');
+                    tautan.className = 'mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400';
+                    tautan.innerHTML = 'Buka situs <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
+                    isi.appendChild(tautan);
+                }
+
+                kartu.append(kepala, isi);
                 wadah.appendChild(kartu);
             });
         }
 
-        renderFitur();
+        renderProyek();
 
         async function startPhotobooth() {
             capturedPhotos = [];

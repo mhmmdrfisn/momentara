@@ -39,7 +39,11 @@ Pratinjau kamera dicerminkan seperti cermin sungguhan. Setiap foto dipotong ke r
 
 ## Tab Tentang Pembuat
 
-Di kanan atas daftar bingkai ada tautan **Tentang Pembuat** yang membuka profil singkat dan ringkasan enam fitur Momentara. Tab ini memakai `switchView()` yang sama dengan layar kamera, dan tetap responsif di ponsel maupun desktop.
+Di kanan atas daftar bingkai ada tautan **Tentang Pembuat** yang membuka profil singkat disertai portofolio sembilan proyek. Tab ini memakai `switchView()` yang sama dengan layar kamera, dan tetap responsif di ponsel maupun desktop.
+
+- Sembilan proyek dirender dari array `PROYEK` lewat `renderProyek()`.
+- Proyek yang punya URL hidup menjadi tautan dengan penanda **Buka Situs**; yang URL-nya `#` tetap sebagai kartu statis.
+- Entri **Momentara** diberi badge **Proyek Ini** karena halaman ini berada di dalam aplikasinya sendiri.
 
 ---
 
