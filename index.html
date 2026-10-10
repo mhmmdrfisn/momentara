@@ -342,55 +342,55 @@
             {
                 judul: "Virtual Tour Campus Tel-U",
                 desc: "Sebuah platform web interaktif yang menyajikan virtual tour lingkungan Telkom University berbasis visual 360°. Web ini mengintegrasikan navigasi peta digital yang responsif dan titik informasi (hotspots) interaktif untuk memberikan pengalaman orientasi kampus yang modern, cepat, dan mudah diakses.",
-                tag: "Wordpress",
+                tag: ["Wordpress"],
                 url: "https://360.telkomuniversity.ac.id/"
             },
             {
                 judul: "Kasirin Bro",
                 desc: "Aplikasi Kasir Standar Toko berbasis Web.",
-                tag: "PHP / SQL",
+                tag: ["PHP", "SQL"],
                 url: "#"
             },
             {
                 judul: "Student Portal",
                 desc: "Sebuah wadah transparan bagi seluruh siswa untuk menyampaikan aspirasi, saran, dan kritik kepada pihak sekolah, yang alur tindak selanjutnya dapat dipantau langsung oleh OSIS serta Kesiswaan, sekaligus dapat dilihat oleh siswa lainnya.",
-                tag: "PHP / SQL",
+                tag: ["PHP", "SQL"],
                 url: "#"
             },
             {
                 judul: "SimpleCalc",
                 desc: "Aplikasi SimplexCalc dirancang khusus untuk membantu dan mempercepat proses pengerjaan manual algoritma programa linear dengan Metode Simpleks dan Big-M. Dilengkapi dengan kalkulator matriks aljabar yang matematis, sehingga terhindar dari kesalahan hitung dan bisa fokus pada pemahaman logika iterasi.",
-                tag: "Javascript / HTML / TailWind",
+                tag: ["Javascript", "HTML", "TailWind"],
                 url: "https://simplexcalc-bytexindonesia.netlify.app/"
             },
             {
-                judul: "Poskes",
-                desc: "(Pos Kesehatan) dirancang khusus untuk mendukung pelayanan kesehatan di lapangan selama kegiatan MOSAIK ULBI, mulai dari pencatatan pasien baru beserta tanda vitalnya, pemantauan status penanganan secara langsung, hingga rekap riwayat kesehatan yang dapat dibagikan dalam sekali klik. Dibangun dengan antarmuka yang ringan dan alur yang sederhana.",
-                tag: "Javascript / HTML / TailWind",
+                judul: "Rukes",
+                desc: "(Ruang Kesehatan) dirancang khusus untuk mendukung pelayanan kesehatan di lapangan selama kegiatan MOSAIK ULBI, mulai dari pencatatan pasien baru beserta tanda vitalnya, pemantauan status penanganan secara langsung, hingga rekap riwayat kesehatan yang dapat dibagikan dalam sekali klik. Dibangun dengan antarmuka yang ringan dan alur yang sederhana.",
+                tag: ["Javascript", "HTML", "TailWind"],
                 url: "#"
             },
             {
                 judul: "IftarSync",
                 desc: "Aplikasi modern yang menyelaraskan kebutuhan peserta dan kepanitiaan dalam momen Ramadan. Melalui halaman user yang interaktif, peserta dapat melihat detail acara, mengisi data diri, serta mengonfirmasi kehadiran beserta pesanan khusus mereka. Di sisi lain, panel admin bertindak sebagai pusat kendali cerdas yang melacak aliran dana masuk, memverifikasi bukti bayar, dan menyajikan rekap data akurat untuk menghindari kesalahan komunikasi selama persiapan acara.",
-                tag: "Javascript / GAS / TailWind",
+                tag: ["Javascript", "GAS", "TailWind"],
                 url: "#"
             },
             {
                 judul: "Queue Tracker",
                 desc: "Dirancang khusus untuk mempercepat proses perekaman data manual lapangan pada praktikum Teori Antrean (Model M/M/s). Dibangun dengan arsitektur yang ringan dan logika penguncian antrean cerdas (Smart Queue Lock) untuk memastikan integritas data.",
-                tag: "Javascript / HTML / TailWind",
+                tag: ["Javascript", "HTML", "TailWind"],
                 url: "https://queue-tracker-bytexindonesia.netlify.app/"
             },
             {
                 judul: "Laksamana Cloud Storage",
                 desc: "Aplikasi cloud storage gratis. Aplikasi ini dirancang untuk menyederhanakan manajemen file Anda dengan antarmuka yang bersih dan penyimpanan awan yang andal tanpa biaya tersembunyi. Unggah, simpan, dan kelola data Anda kapan saja dengan efisiensi tingkat tinggi.",
-                tag: "Javascript / GAS / TailWind",
+                tag: ["Javascript", "GAS", "TailWind"],
                 url: "#"
             },
             {
                 judul: "Healing Loko",
                 desc: "Aplikasi pemesanan tiket kereta api online ini dirancang untuk memenuhi tugas akhir dan memberikan pengalaman memesan perjalanan yang cepat, praktis, dan tanpa ribet. Mulai dari cek jadwal real-time, pilih kursi favorit secara interaktif, hingga pembayaran instan, semua bisa diselesaikan dalam hitungan detik agar perjalanan Anda menjadi lebih tenang dan terencana.",
-                tag: "Node JS / React",
+                tag: ["Node JS", "React"],
                 url: "#"
             }
         ];
@@ -423,16 +423,23 @@
                 ket.textContent = p.desc;
                 isi.appendChild(ket);
 
-                // tag berada di bawah deskripsi, tautan tepat di bawah tag
-                const tag = document.createElement('span');
-                tag.className = 'mt-3 inline-block text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full px-2.5 py-1';
-                tag.textContent = p.tag;
-                isi.appendChild(tag);
+                // Setiap tag jadi blok sendiri, dipisah spasi — bukan satu string bertanda "/"
+                const tagWrap = document.createElement('div');
+                tagWrap.className = 'mt-3 flex flex-wrap gap-2';
+                p.tag.forEach(t => {
+                    const chip = document.createElement('span');
+                    // pl lebih besar dari pr: letter-spacing menambah ruang di
+                    // akhir teks, tanpa padding ekstra teksnya terlihat menjorok ke kiri.
+                    chip.className = 'inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white border border-stone-200 rounded-full pl-2.5 pr-3.5 py-1';
+                    chip.textContent = t;
+                    tagWrap.appendChild(chip);
+                });
+                isi.appendChild(tagWrap);
 
                 if (hidup) {
-                    const tautan = document.createElement('span');
-                    tautan.className = 'mt-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400';
-                    tautan.innerHTML = 'Buka situs <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
+                    const tautan = document.createElement('div');
+                    tautan.className = 'mt-2.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-400';
+                    tautan.innerHTML = '<span>Buka situs</span><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
                     isi.appendChild(tautan);
                 }
 

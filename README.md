@@ -41,7 +41,8 @@ Pratinjau kamera dicerminkan seperti cermin sungguhan. Setiap foto dipotong ke r
 
 Di kanan atas daftar bingkai ada tautan **Tentang Pembuat** yang membuka profil singkat disertai portofolio sembilan proyek. Tab ini memakai `switchView()` yang sama dengan layar kamera, dan tetap responsif di ponsel maupun desktop.
 
-- Sembilan proyek dirender dari array `PROYEK` lewat `renderProyek()`. Susunan tiap kartu dari atas ke bawah: judul, deskripsi, tag, lalu "Buka Situs" bila proyek punya URL.
+- Sembilan proyek dirender dari array `PROYEK` lewat `renderProyek()`. Susunan tiap kartu dari atas ke bawah: judul, deskripsi, deretan tag, lalu "Buka Situs" bila proyek punya URL.
+- Tag disimpan sebagai array dan digambar sebagai chip terpisah satu per satu, bukan satu string yang dipisah garis miring. Contoh: `tag: ["Javascript", "HTML", "TailWind"]`.
 - Proyek yang punya URL hidup menjadi tautan; yang URL-nya `#` tetap sebagai kartu statis.
 - SimpleCalc menautkan ke https://simplexcalc-bytexindonesia.netlify.app/ bersama Virtual Tour Campus Tel-U dan Queue Tracker.
 
