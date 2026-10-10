@@ -1,14 +1,12 @@
 # Momentara
 
-Photobooth yang hidup di satu file HTML. Pilih bingkai, tumpuk overlay lucu di atas foto, tekan sekali, lalu unduh strip berisi tiga foto Anda.
+Photobooth sederhana yang berjalan sepenuhnya di dalam browser. Pilih satu bingkai, tekan tombol rana sekali, dan aplikasi mengambil tiga foto beruntun lalu menyusunnya menjadi satu strip PNG yang bisa diunduh.
 
-Semua digambar langsung di `<canvas>` di perangkat Anda sendiri — tidak ada unggahan, tidak ada akun, tidak ada server.
+Seluruh pemrosesan gambar dilakukan di `<canvas>` di perangkat Anda. Tidak ada unggahan, tidak ada akun, tidak ada server.
 
 ---
 
 ## Menjalankan
-
-Butuh **server lokal** agar browser mengizinkan akses kamera. `file://` tidak cukup karena `getUserMedia` hanya jalan di origin aman.
 
 ```bash
 git clone https://github.com/mhmmdrfisn/momentara.git
@@ -18,73 +16,107 @@ python -m http.server 8000
 
 Buka <http://localhost:8000>.
 
-Alternatif: `npx serve`, `php -S localhost:8000`, atau Live Server dari VS Code.
+**Server lokal wajib dipakai.** Browser hanya mengizinkan `getUserMedia` pada origin aman (`https://` atau `localhost`). Membuka `index.html` langsung lewat `file://` membuat halaman tetap tampil, tetapi tombol kamera gagal karena alasan keamanan browser.
+
+Alternatif: `npx serve`, `php -S localhost:8000`, atau ekstensi Live Server di VS Code.
 
 ---
 
-## Fitur
+## Cara kerja
 
-- **Tiga foto otomatis.** Satu kali tekan, hitung mundur 3-2-1 per foto, kilau putih di antar foto.
-- **38 bingkai**, dikelompokkan menjadi Elegan, Segar, Kosmik, Lucu, Romans, Budaya, Vintage, dan Minimal.
-- **7 overlay lucu** — Mahkota, Kacamata, Kumis, Topi Pesta, Teling Kucing, Merona, Kilau — digambar *di atas* foto. Bisa ditumpuk sebanyak apa pun pada bingkai mana pun.
-- **Pratinjau jujur.** Setiap kartu dirender oleh kode yang sama dengan strip akhir, jadi pratinjau tidak mungkin menampilkan sesuatu yang berbeda dari hasil sebenarnya.
-- **Cari bingkai** berdasarkan nama atau kelompok, plus tombol **Acak** untuk pilihan acak.
-- **Ulangi** tanpa memuat ulang halaman, dan nama file unduhan mengikuti bingkai yang Anda pilih.
-- **Ingat pilihan terakhir** lewat `localStorage`.
-- Foto dicerminkan seperti cermin sungguhan dan dipotong konsisten rasio 4:3.
+1. Pilih bingkai dari daftar.
+2. Klik **Initialize Camera** — browser meminta izin kamera.
+3. Klik tombol rana **satu kali**. Tiga foto diambil otomatis:
+   - hitung mundur 3-2-1 sebelum tiap foto,
+   - kilau putih sesaat tiap kali rana ditekan,
+   - jeda 1 detik antar foto.
+4. Strip selesai, lalu tampil di layar hasil.
+5. Klik **Download** untuk menyimpan PNG, atau **Home** untuk kembali.
+
+Pratinjau kamera dicerminkan seperti cermin sungguhan. Setiap foto dipotong ke rasio 4:3 yang sama agar ketiga bingkai selalu sejajar.
 
 ---
 
-## Struktur
+## Bingkai
 
-Tidak ada build step, tidak ada framework. `index.html` berisi markup, gaya, dan satu skrip yang mendefinisikan tiga hal:
+Sepuluh bingkai, didefinisikan di objek `themes`:
 
-```
-pembantu    rr() acak() bintang() hati() daun() …    primitif gambar
-BININGKAI   38 entri                                definisi bingkai
-OVERLAY     7 entri                                 corak di atas foto
-```
+| Bingkai | Warna teks | Font |
+|---|---|---|
+| Aura Blanc | `#475569` | Plus Jakarta Sans |
+| Lumina Pearl | `#6D28D9` | Playfair Display |
+| Linen Dream | `#57534E` | Plus Jakarta Sans |
+| Matcha Latte | `#166534` | Plus Jakarta Sans |
+| Santalus Merpati | `#9D174D` | Playfair Display (miring) |
+| Cendrawasih Vetiver | `#0E7490` | Plus Jakarta Sans |
+| Kasmir Kijang | `#0369A1` | Plus Jakarta Sans |
+| Noir Ébène | `#D4AF37` | Playfair Display (miring) |
+| Velvet Rose | `#9F1239` | Playfair Display (miring) |
+| Oud Wood | `#D6D3D1` | Plus Jakarta Sans (tebal) |
 
-Sebuah bingkai adalah data murni plus dua fungsi gambar:
+---
+
+## Struktur kode
+
+Semuanya berada di satu `index.html`. Tiga bagian penting:
+
+**`themes`** — kamus warna, font, dan teks judul untuk setiap bingkai.
+
+**`captureFrame(video)`** — menggambar satu frame dari `<video>` ke canvas berukuran 500×375, memotongnya ke rasio 4:3 dan mencerminnya.
+
+**`processPhotos()`** — menyusun strip akhir. Latar depan bingkai digambar lebih dulu, lalu tiga foto, lalu judul dan footer. Sebagian bingkai punya latar khusus yang ditangani lewat percabangan di fungsi ini.
+
+Konstanta ukuran ada di bagian atas skrip:
 
 ```js
-batik: {
-  nama: 'Batik Parang',
-  grup: 'Budaya',
-  foto: { radius: 8, garis: { warna: '#F5F3FF', lebar: 4 } },
-  bg(ctx, w, h) { /* gambar latar 600×1600 */ },
-  judul: { teks: 'BATIK PARANG', font: `700 30px ${SANS}`, warna: '#FDE68A' }
-}
+const CANVAS_W = 600, CANVAS_H = 1600, PHOTO_W = 500, PHOTO_H = 375, PADDING = 50, SPACING = 30;
 ```
 
-Lalu `composeStrip()` menjalankan: `bg()` → tiga `gambarFoto()` → `atas()` opsional → judul → kaki.
+- `CANVAS_W` × `CANVAS_H` — ukuran strip hasil, 600 × 1600
+- `PHOTO_W` × `PHOTO_H` — ukuran satu foto, 500 × 375 (rasio 4:3)
+- `PADDING` dan `SPACING` — jarak tepi serta jarak antar foto
 
-Dua hal yang perlu diketahui bila ingin menambah bingkai:
+Hasil akhir diekspor sebagai PNG 600 × 1600.
 
-- **Keacakan memakai benih.** Semua pola prosedural memanggil `acak(namaBingkai)`, bukan `Math.random()`. Jadi taburan bintang dan serpihan terrazzo selalu muncul di tempat yang sama setiap kali digambar ulang. Itulah yang membuat pratinjau cocok dengan hasilnya.
-- **`foto` itu resep, bukan kondisi khusus.** `{ alas, ruang, radius, garis, bayang }` dibaca oleh satu fungsi yang sama, sehingga percabangan `if (selectedTheme === 'velvet')` yang lama sudah hilang.
+### Menambah bingkai baru
 
-### Menambah bingkai
+Tambahkan satu entri ke objek `themes`:
 
-Tambahkan satu entri ke `BININGKAI`. Galeri, pratinjau, pencarian, pengelompokan, dan nama file unduhan semuanya menyesuaikan sendiri. Pakai ulang `gradien()`, `radial()`, `bintang()`, `hati()`, `daun()`, `pelangi()`, `ledakan()`, `bintangLatar()`, dan `acak()` daripada memanggil `Math.random()`.
+```js
+themes.hijau = {
+    bg: '#ECFDF5',
+    border: '#A7F3D0',
+    text: 'Hijau Muda',
+    textColor: '#065F46',
+    font: '600 28px "Plus Jakarta Sans"',
+    radius: 24
+};
+```
 
-### Menambah overlay
+Lalu salin salah satu kartu yang sudah ada di markup, ganti `onclick="selectTheme('hijau')"` dan `id="theme-hijau"`. Kalau bingkai itu butuh latar khusus, tambahkan percabangannya di `processPhotos()`.
 
-Tambahkan ke `OVERLAY` dengan `label`, warna `sw` untuk chip, dan `fn(ctx, w, h)` yang menggambar dalam **koordinat lokal foto** (`0,0` adalah pojok kiri atas foto). `gambarFoto()` sudah mengurus pemotongan dan pergeseran koordinat.
+---
+
+## Ketergantungan
+
+Semua dimuat dari CDN, jadi butuh koneksi internet saat halaman pertama dibuka:
+
+- **Tailwind CSS** via `cdn.tailwindcss.com`
+- **Google Fonts** — Plus Jakarta Sans dan Playfair Display
+
+Tidak ada proses build, tidak ada `package.json`, tidak ada dependensi npm.
 
 ---
 
 ## Privasi
 
-Foto tidak pernah dikirim ke mana pun. Alirannya langsung dari kamera ke canvas di luar layar, lalu ke `blob:` URL untuk diunduh. Tidak ada panggilan jaringan setelah halaman dimuat, tidak ada analitik, tidak ada cookie. Satu-satunya data yang disimpan adalah bingkai dan overlay pilihan Anda di `localStorage`, dan itu terhapus bersama data situs.
-
-Aliran kamera dilepas setelah pemotretan, saat dibatalkan, saat tab disembunyikan, dan saat halaman ditutup. Hitung mundur yang sedang berjalan dibatalkan lewat token sesi, sehingga tidak ada timer yang masih berjalan menembak ke layar yang sudah ditinggalkan.
+Foto tidak pernah dikirim ke mana pun. Alurnya langsung dari kamera ke canvas, lalu ke tautan unduhan di komputer sendiri. Tidak ada analitik, tidak ada cookie, tidak ada penyimpanan. Menutup halaman menghapus semuanya.
 
 ---
 
 ## Kebutuhan
 
-Chrome, Edge, Firefox, atau Safari versi terkini. Memakai `getUserMedia`, `<canvas>`, dan `IntersectionObserver` (untuk pratinjau malas). Kamera memerlukan origin aman — `localhost` sudah cukup.
+Browser Chromium, Firefox, atau Safari versi terkini, dengan kamera dan mikrofon tidak dipakai aplikasi lain.
 
 ---
 
